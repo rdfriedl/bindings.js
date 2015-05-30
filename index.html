@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>bindings</title>
+
+		<script src="//code.jquery.com/jquery.js"></script>
+
+		<script src="bindings.js"></script>
+		<script src="main.js"></script>
+	</head>
+	<body>
+		<h1 id="testing" bind-text="testing"></h1>
+		<a href="#" bind-text="'test'" bind-click="console.info(this)"></a>
+		<br>
+		name: <span bind-text="name || 'error'"></span>
+		email: <span bind-text="email"></span>
+	</body>
+</html>
