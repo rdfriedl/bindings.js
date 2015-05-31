@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Bindings - Scopes</title>
+
+		<style type="text/css">
+			div{
+				border: 1px solid black;
+				padding: 10px;
+			}
+			p{
+				margin: 0px;
+			}
+			body>p{
+				margin-top: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<a href="../">< back</a>
+
+		
+		<p>Profile</p>
+		<div>
+			<p>name: <span bind-text="profile.name"></span></p>
+			<p>email: <span bind-text="profile.email"></span></p>
+		</div>
+
+		<p>Profile (using <i>bind-with</i>)</p>
+		<div bind-with="profile">
+			<p>name: <span bind-text="name"></span></p>
+			<p>email: <span bind-text="email"></span></p>
+		</div>
+
+		<h1>List</h1>
+		<div bind-foreach="items">
+			<div>
+				<p>name: <span bind-text="name"></span></p>
+				<p>price: <span bind-text="price"></span></p>
+			</div>
+		</div>
+
+		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
+		<script type="text/javascript" src="../../src/bindings.js"></script>
+		<script type="text/javascript" src="../../src/bindings-types.js"></script>
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="../libraries/object-observe.min.js"></script>
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'title',
+				items: [
+					{
+						name: 'apple',
+						price: '$2'
+					},
+					{
+						name: 'ornage',
+						price: '$2.50'
+					},
+					{
+						name: 'lemond',
+						price: '$1.85'
+					}
+				],
+				profile: {
+					title: 'profile',
+					email: 'someone@something.com',
+					name: 'dude'
+				}
+			}
+
+			bindings.createModal(myModal);
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>
