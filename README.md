@@ -1,6 +1,6 @@
 ##**Bindings**
 Bindings.js is a simple javascript html binding library.
-its purpose is to provie simple "Modal View" capabilities to javascript.
+its purpose is to provie simple easy "Modal View" into javascript.
 
 ###NOTE:
 this library is in ealy stages of development, it **dose** contain bugs.
