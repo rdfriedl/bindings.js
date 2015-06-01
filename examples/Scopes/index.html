@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Bindings - Scopes</title>
+		<title bind-text="'Bindings - '+this.title"></title>
 
 		<style type="text/css">
 			div{
@@ -19,26 +19,34 @@
 	<body>
 		<a href="../">< back</a>
 
+		<h1>bind-with</h1>
 		
 		<p>Profile</p>
 		<div>
-			<p>name: <span bind-text="profile.name"></span></p>
-			<p>email: <span bind-text="profile.email"></span></p>
+			<p>name: <span bind-text="this.profile.name"></span></p>
+			<p>email: <span bind-text="this.profile.email"></span></p>
 		</div>
 
 		<p>Profile (using <i>bind-with</i>)</p>
-		<div bind-with="profile">
-			<p>name: <span bind-text="name"></span></p>
-			<p>email: <span bind-text="email"></span></p>
+		<div bind-with="this.profile">
+			<p>name: <span bind-text="this.name"></span></p>
+			<p>email: <span bind-text="this.email"></span></p>
 		</div>
 
-		<h1>List</h1>
-		<div bind-foreach="items">
+		<h1>bind-foreach</h1>
+
+		<p>List (using <i>bind-foreach</i>)</p>
+		<div bind-foreach="this.items">
 			<div>
-				<p>name: <span bind-text="name"></span></p>
-				<p>price: <span bind-text="price"></span></p>
+				<p>name: <span bind-text="this.name"></span></p>
+				<p>price: <span bind-text="this.price"></span></p>
 			</div>
 		</div>
+
+		<p>List (using <i>bind-repeat</i>)</p>
+		<ul bind-repeat="2">
+			<li>item</li>
+		</ul>
 
 		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
 		<script type="text/javascript" src="../../src/bindings.js"></script>
@@ -48,7 +56,7 @@
 
 		<script type="text/javascript">
 			myModal = {
-				title: 'title',
+				title: 'Scopes',
 				items: [
 					{
 						name: 'apple',

@@ -115,7 +115,7 @@ bindings = {
 
 		return data;
 	},
-	_evalRequires: function(string,scope){
+	_evalRequires: function(string,scope){ //only binds to values/scopes on the first level
 		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 
 		string = string || '';
@@ -139,25 +139,20 @@ bindings = {
 		var buildContextFromScope = function(s){
 			var o = new s.values.__proto__.constructor;
 			for (var i in s.values) {
-				if(s.values[i] instanceof bindings.Scope){
-					o[i] = buildContextFromScope(s.values[i]);
-				}
-				else{
-					o.__defineGetter__(i,function(o,i,data){
-						data.requires.push(this.values[i]);
-						data.gets.push(this.values[i]);
+				o.__defineGetter__(i,function(o,i,data){
+					data.requires.push(this.values[i]);
+					data.gets.push(this.values[i]);
 
-						// 	return this.values[i].value;
-					}.bind(s,o,i,data))
+					if(typeof this.values[i].value !== 'function') return this.values[i].value;
+				}.bind(s,o,i,data))
 
-					o.__defineSetter__(i,function(o,i,data,val){
-						data.requires.push(this.values[i]);
-						data.sets.push(this.values[i]);
-						
-						// this.values[i].setValue(val);
-						// o[i] = val;
-					}.bind(s,o,i,data))
-				}
+				o.__defineSetter__(i,function(o,i,data,val){
+					data.requires.push(this.values[i]);
+					data.sets.push(this.values[i]);
+					
+					// this.values[i].setValue(val);
+					// o[i] = val;
+				}.bind(s,o,i,data))
 			};
 			return o;
 		}
@@ -209,7 +204,7 @@ bindings = {
 // modal
 bindings.Modal = function(object,options){
 	this.options = Object.create(this.options);
-	this.scope = new bindings.Scope('',object,this);
+	this.scope = new bindings.Scope('',object);
 
 	options = options || {};
 	for(var i in options){
@@ -225,10 +220,11 @@ bindings.Modal.prototype = {
 	},
 	scope: undefined,
 	applyBindings: function(el){
-		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
+		if(!(el instanceof Node) && el) throw new Error('first argument has to be a Node');
 
 		if(el) this.options.element = el;
 
+		this.removeAllBindings();
 		this.bindings = bindings._applyBindings(this.options.element,this.scope);
 	},
 	getBinding: function(el){
@@ -245,7 +241,7 @@ bindings.Modal.prototype = {
 
 		var binding = this.getBinding(el);
 		if(binding){
-			binding.unbind();
+			binding._unbind();
 
 			for (var i = 0; i < this.bindings.length; i++) {
 				if(this.bindings[i].el === el){
@@ -257,7 +253,7 @@ bindings.Modal.prototype = {
 	},
 	removeAllBindings: function(){
 		for (var i = 0; i < this.bindings.length; i++) {
-			this.bindings[i].unbind();
+			this.bindings[i]._unbind();
 		};
 		this.bindings = [];
 	}
@@ -332,12 +328,15 @@ bindings.Scope.prototype = {
 	getKey: function(value){ //finds a key based on a value
 		for (var i in this.values) {
 			if(this.values[i].value == value){
-				return this.values[i];
+				return i;
 			}
 		};
 	},
 	getValue: function(key){
 		return this.values[key];
+	},
+	getValueFromValue: function(val){
+		return this.getValue(this.getKey(val));
 	},
 	update: function(){
 		this.emit('change',this)
@@ -353,11 +352,22 @@ bindings.Scope.prototype = {
 			this.events[event].splice(this.events[event].indexOf(fn),1);
 		}
 	},
-	emit: function(event,data){
+	emit: function(event,data,direction){
 		if(!this.events[event]) this.events[event] = [];
 		for (var i = 0; i < this.events[event].length; i++) {
 		 	this.events[event][i](data);
 	 	};
+	 	//send event in direction
+	 	switch(direction){
+	 		case 'up':
+	 			if(this.parent) this.parent.emit(event,undefined,direction);
+	 			break;
+	 		case 'down':
+	 			for (var i in this.values) {
+	 				this.values[i].emit(event,undefined,direction);
+	 			};
+	 			break;
+	 	}
 	},
 }
 bindings.Scope.prototype.constructor = bindings.Scope;
@@ -390,13 +400,22 @@ bindings.Value.prototype = {
 			this.events[event].splice(this.events[event].indexOf(fn),1);
 		}
 	},
-	emit: function(event,data){
+	emit: function(event,data,direction){
 		if(!this.events[event]){
 			this.events[event] = [];
 		}
 		for (var i = 0; i < this.events[event].length; i++) {
 		 	this.events[event][i](data);
 	 	};
+	 	//send event in direction
+	 	switch(direction){
+	 		case 'up':
+	 			if(this.parent) this.parent.emit(event,undefined,direction);
+	 			break;
+	 		case 'down':
+	 			//this is a value so we cant go any further down
+	 			break;
+	 	}
 	},
 	setValue: function(val){
 		this.value = val || this.value;
@@ -450,17 +469,15 @@ bindings.Binding.prototype = {
 			this.update();
 		}
 		catch(e){
-			console.error('failed to bind');
+			console.error('failed to bind: { '+this.src.string+' } on element');
 			console.error(this.el);
 			console.error(e);
 		}
 	},
 	_unbind: function(){
 		this.el.__bindings__.splice(this.el.__bindings__.indexOf(this),1);
-		//unbind all bindings
-		for (var i = 0; i < this.src.values.length; i++) {
-			this.src.values[i].off('change',this._update.bind(this));
-		};
+		//unbind all events
+		this._unbindEvents();
 		this.unbind();
 	},
 	_unbindEvents: function(){
