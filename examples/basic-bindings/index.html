@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title bind-text="'Bindings - '+this.title"></title>
+	</head>
+	<body>
+		<a href="../">< back</a>
+		
+		<!-- simple text binding -->
+		<h1 bind-text="this.title"></h1>
+
+		<b>Simple actions</b>
+		<br>
+		<button bind-click="console.log('testing')">console.log</button>
+		<br>
+		<button bind-click="this.action()">function in modal</button>
+		<br>
+		<button bind-click="this.text='changed!'">change</button> <i bind-text="this.text"></i>
+		<br>
+		<button bind-click="this.number -= 1"> < </button><button bind-click="this.number += 1"> > </button> <i bind-text="this.number"></i>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="../libraries/object-observe.min.js"></script>
+		<!-- binding lib -->
+		<script type="text/javascript" src="../libraries/bindings.min.js"></script>
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'Basic Bindings',
+				text: 'text',
+				number: 0,
+				action: function(){
+					alert('click!')
+				}
+			}
+
+			bindings.createModal(myModal);
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title bind-text="'Bindings - '+this.title"></title>
+
+		<style type="text/css">
+			div{
+				border: 1px solid black;
+				padding: 10px;
+			}
+			p{
+				margin: 0px;
+			}
+			body>p{
+				margin-top: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<a href="../">< back</a>
+
+		<h1>bind-with</h1>
+		
+		<p>Profile</p>
+		<div>
+			<p>name: <span bind-text="this.profile.name"></span></p>
+			<p>email: <span bind-text="this.profile.email"></span></p>
+		</div>
+
+		<p>Profile (using <i>bind-with</i>)</p>
+		<div bind-with="this.profile">
+			<p>name: <span bind-text="this.name"></span></p>
+			<p>email: <span bind-text="this.email"></span></p>
+		</div>
+
+		<h1>bind-foreach</h1>
+
+		<p>List (using <i>bind-foreach</i>)</p>
+		<div bind-foreach="this.items">
+			<div>
+				<p>name: <span bind-text="this.name"></span></p>
+				<p>price: <span bind-text="this.price"></span></p>
+			</div>
+		</div>
+
+		<p>List (using <i>bind-repeat</i>)</p>
+		<ul bind-repeat="2">
+			<li>item</li>
+		</ul>
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="../libraries/object-observe.min.js"></script>
+		<!-- binding lib -->
+		<script type="text/javascript" src="../libraries/bindings.min.js"></script>
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'Scopes',
+				items: [
+					{
+						name: 'apple',
+						price: '$2'
+					},
+					{
+						name: 'ornage',
+						price: '$2.50'
+					},
+					{
+						name: 'lemond',
+						price: '$1.85'
+					}
+				],
+				profile: {
+					title: 'profile',
+					email: 'someone@something.com',
+					name: 'dude'
+				}
+			}
+
+			bindings.createModal(myModal);
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>
