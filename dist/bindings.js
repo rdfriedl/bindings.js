@@ -53,23 +53,6 @@ bindings = {
 		}
 	},
 
-	_applyBindings: function(el,scope){ //applys bindings for el and its children
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
-
-		var _scope;
-		var _bindings = [];
-		for (var i = 0; i < el.children.length; i++) {
-			var data = this._parseBindings(el.children[i],scope);
-
-			_bindings = _bindings.concat(data);
-
-			//children
-			if(el.children[i].children){
-				_bindings = _bindings.concat(this._applyBindings(el.children[i],el.children[i].__scope__ || scope));
-			}
-		};
-		return _bindings;
-	},
 	_parseBindings: function(el,scope){ //parses bindings for a specific element 
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
 		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
@@ -225,7 +208,7 @@ bindings.Modal.prototype = {
 		if(el) this.options.element = el;
 
 		this.removeAllBindings();
-		this.bindings = bindings._applyBindings(this.options.element,this.scope);
+		this.bindings = this.scope.applyBindings(this.options.element);
 	},
 	getBinding: function(el){
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
@@ -369,6 +352,30 @@ bindings.Scope.prototype = {
 	 			break;
 	 	}
 	},
+	applyBindings: function(el){
+		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
+
+		var _bindings = [];
+
+		//remove old bindings
+		if(el.__bindings__){
+			for (var i = el.__bindings__.length - 1; i >= 0; i--) {
+				el.__bindings__[i]._unbind();
+			};
+		}
+		for (var i = 0; i < el.children.length; i++) {
+			var data = bindings._parseBindings(el.children[i],this);
+
+			_bindings = _bindings.concat(data);
+
+			//children
+			if(el.children[i].children){
+				el.children[i].__scope__ = el.children[i].__scope__ || this;
+				_bindings = _bindings.concat(el.__bindings__ = el.children[i].__scope__.applyBindings(el.children[i]));
+			}
+		};
+		return _bindings;
+	}
 }
 bindings.Scope.prototype.constructor = bindings.Scope;
 
@@ -458,9 +465,6 @@ bindings.Binding.prototype = {
 	src: undefined, //src
 	events: [], //list of events and the object they are on
 	_bind: function(){
-		this.el.__bindings__ = this.el.__bindings__ || [];
-		this.el.__bindings__.push(this);
-
 		this._updateEvents();
 		this.bind();
 	},
@@ -475,7 +479,6 @@ bindings.Binding.prototype = {
 		}
 	},
 	_unbind: function(){
-		this.el.__bindings__.splice(this.el.__bindings__.indexOf(this),1);
 		//unbind all events
 		this._unbindEvents();
 		this.unbind();
@@ -554,7 +557,11 @@ bindings.Src.prototype = {
 bindings.Src.prototype.constructor = bindings.Src;
 
 //fix for IE
-document.children = document.body.children;
+if(!document.children){
+	document.__defineGetter__('children',function(){
+		return this.body.children;
+	})
+}
 
 (function(bindings){
 
@@ -592,6 +599,11 @@ bindings.bindings['with'] = {
 
 bindings.bindings['foreach'] = {
 	__foreach_children__: [],
+	removeAllChildren: function(){
+		while (this.el.children.length !== 0) {
+		    this.el.removeChild(this.el.children[0]);
+		}
+	},
 	bind: function(){
 		var a = [];
 		for (var i = 0; i < this.el.children.length; i++) {
@@ -600,9 +612,7 @@ bindings.bindings['foreach'] = {
 		this.__foreach_children__ = a;
 	},
 	update: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		this.src.update();
 		var val = this.scope.getValueFromValue(this.src.value);
 		if(!(val instanceof bindings.Scope)) throw new Error('foreach requires a Object or Array')
@@ -614,11 +624,11 @@ bindings.bindings['foreach'] = {
 				this.el.appendChild(el)
 			};
 		};
+
+		this.scope.applyBindings(this.el);
 	},
 	unbind: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		for (var k = 0; k < this.__foreach_children__.length; k++) {
 			var el = this.__foreach_children__[k].cloneNode(true);
 			this.el.appendChild(el)
@@ -628,6 +638,11 @@ bindings.bindings['foreach'] = {
 
 bindings.bindings['repeat'] = {
 	__foreach_children__: [],
+	removeAllChildren: function(){
+		while (this.el.children.length !== 0) {
+		    this.el.removeChild(this.el.children[0]);
+		}
+	},
 	bind: function(){
 		var a = [];
 		for (var i = 0; i < this.el.children.length; i++) {
@@ -636,9 +651,7 @@ bindings.bindings['repeat'] = {
 		this.__foreach_children__ = a;
 	},
 	update: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		this.src.update();
 
 		for (var i = 0; i < this.src.value; i++) {
@@ -647,11 +660,11 @@ bindings.bindings['repeat'] = {
 				this.el.appendChild(el)
 			};
 		};
+
+		this.scope.applyBindings(this.el);
 	},
 	unbind: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		for (var k = 0; k < this.__foreach_children__.length; k++) {
 			var el = this.__foreach_children__[k].cloneNode(true);
 			this.el.appendChild(el)

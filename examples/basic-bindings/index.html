@@ -2,6 +2,14 @@
 <html>
 	<head>
 		<title bind-text="'Bindings - '+this.title"></title>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
+
+		<!-- binding lib -->
+		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
+		<script type="text/javascript" src="../../src/bindings.js"></script>
+		<script type="text/javascript" src="../../src/bindings-types.js"></script>
 	</head>
 	<body>
 		<a href="../">< back</a>
@@ -18,13 +26,6 @@
 		<button bind-click="this.text='changed!'">change</button> <i bind-text="this.text"></i>
 		<br>
 		<button bind-click="this.number -= 1"> < </button><button bind-click="this.number += 1"> > </button> <i bind-text="this.number"></i>
-
-		<!-- pollyfill for firefox & IE -->
-		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
-		<!-- binding lib -->
-		<script type="text/javascript" src="../../dist/bindings.min.js"></script>
-		<!-- <script type="text/javascript" src="../../src/bindings.js"></script> -->
-		<!-- <script type="text/javascript" src="../../src/bindings-types.js"></script> -->
 
 		<script type="text/javascript">
 			myModal = {

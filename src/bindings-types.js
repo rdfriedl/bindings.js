@@ -34,6 +34,11 @@ bindings.bindings['with'] = {
 
 bindings.bindings['foreach'] = {
 	__foreach_children__: [],
+	removeAllChildren: function(){
+		while (this.el.children.length !== 0) {
+		    this.el.removeChild(this.el.children[0]);
+		}
+	},
 	bind: function(){
 		var a = [];
 		for (var i = 0; i < this.el.children.length; i++) {
@@ -42,9 +47,7 @@ bindings.bindings['foreach'] = {
 		this.__foreach_children__ = a;
 	},
 	update: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		this.src.update();
 		var val = this.scope.getValueFromValue(this.src.value);
 		if(!(val instanceof bindings.Scope)) throw new Error('foreach requires a Object or Array')
@@ -56,11 +59,11 @@ bindings.bindings['foreach'] = {
 				this.el.appendChild(el)
 			};
 		};
+
+		this.scope.applyBindings(this.el);
 	},
 	unbind: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		for (var k = 0; k < this.__foreach_children__.length; k++) {
 			var el = this.__foreach_children__[k].cloneNode(true);
 			this.el.appendChild(el)
@@ -70,6 +73,11 @@ bindings.bindings['foreach'] = {
 
 bindings.bindings['repeat'] = {
 	__foreach_children__: [],
+	removeAllChildren: function(){
+		while (this.el.children.length !== 0) {
+		    this.el.removeChild(this.el.children[0]);
+		}
+	},
 	bind: function(){
 		var a = [];
 		for (var i = 0; i < this.el.children.length; i++) {
@@ -78,9 +86,7 @@ bindings.bindings['repeat'] = {
 		this.__foreach_children__ = a;
 	},
 	update: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		this.src.update();
 
 		for (var i = 0; i < this.src.value; i++) {
@@ -89,11 +95,11 @@ bindings.bindings['repeat'] = {
 				this.el.appendChild(el)
 			};
 		};
+
+		this.scope.applyBindings(this.el);
 	},
 	unbind: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
+		this.removeAllChildren();
 		for (var k = 0; k < this.__foreach_children__.length; k++) {
 			var el = this.__foreach_children__[k].cloneNode(true);
 			this.el.appendChild(el)
