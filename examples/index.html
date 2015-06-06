@@ -19,7 +19,7 @@
 	</head>
 
 	<body>
-		<a href="https://github.com/rdfriedl/block-script" target="_blank" class="git_fork_link" data-bind="style: {opacity: ($root.menu() == 'main')? 1 : 0}"><img src="res/imgs/forkme_right_darkblue.png"></a>
+		<a href="https://github.com/rdfriedl/bindings.js" class="git_fork_link" data-bind="style: {opacity: ($root.menu() == 'main')? 1 : 0}"><img src="../res/imgs/forkme_right_darkblue.png"></a>
 		
 		<div class="container">
 			<div class="row clearfix">
@@ -35,62 +35,17 @@
 					<!-- page -->
 
 			  		<h3 id="basic-bindings">Basic Bindings</h3>
-			  		<div data-height="250" data-theme-id="15764" data-slug-hash="MwmyZg" data-default-tab="js" data-user="rdfriedl" class='codepen'><pre><code>//custome javascript object
-					myModal = {
-						title: &#39;Basic Bindings&#39;,
-					};
-
-					//create a modal
-					bindings.createModal(myModal);
-					//bind to dom element
-					bindings.applyBindings(myModal,document);</code></pre>
+			  		<div data-height="250" data-theme-id="15764" data-slug-hash="MwmyZg" data-default-tab="js" data-user="rdfriedl" class='codepen'>
 					<p>See the Pen <a href='http://codepen.io/rdfriedl/pen/MwmyZg/'>Basic Bindings</a> by rdfriedl (<a href='http://codepen.io/rdfriedl'>@rdfriedl</a>) on <a href='http://codepen.io'>CodePen</a>.</p>
 					</div><script async src="//assets.codepen.io/assets/embed/ei.js"></script>
 
 			  		<h3 id="functions">Functions</h3>
-					<div data-height="327" data-theme-id="15764" data-slug-hash="zGwKeb" data-default-tab="js" data-user="rdfriedl" class='codepen'><pre><code>//custome javascript object
-					myModal = {
-						title: &quot;Function&quot;,
-						number: 0,
-						action: function(){
-							alert(&#39;Hello World&#39;);
-						}
-					};
-
-					//create a modal
-					bindings.createModal(myModal);
-					//bind to dom element
-					bindings.applyBindings(myModal,document);</code></pre>
+					<div data-height="327" data-theme-id="15764" data-slug-hash="zGwKeb" data-default-tab="js" data-user="rdfriedl" class='codepen'>
 					<p>See the Pen <a href='http://codepen.io/rdfriedl/pen/zGwKeb/'>Functions</a> by rdfriedl (<a href='http://codepen.io/rdfriedl'>@rdfriedl</a>) on <a href='http://codepen.io'>CodePen</a>.</p>
 					</div><script async src="//assets.codepen.io/assets/embed/ei.js"></script>
 
 			  		<h3 id="scopes">Scopes</h3>
-			  		<div data-height="650" data-theme-id="15764" data-slug-hash="bdWpZO" data-default-tab="js" data-user="rdfriedl" class='codepen'><pre><code>
-			  		myModal = {
-						title: &#39;Scopes&#39;,
-						items: [
-							{
-								name: &#39;apple&#39;,
-								price: &#39;$2&#39;
-							},
-							{
-								name: &#39;ornage&#39;,
-								price: &#39;$2.50&#39;
-							},
-							{
-								name: &#39;lemond&#39;,
-								price: &#39;$1.85&#39;
-							}
-						],
-						profile: {
-							title: &#39;profile&#39;,
-							email: &#39;someone@something.com&#39;,
-							name: &#39;dude&#39;
-						}
-					}
-
-					bindings.createModal(myModal);
-					bindings.applyBindings(myModal,document);</code></pre>
+			  		<div data-height="650" data-theme-id="15764" data-slug-hash="bdWpZO" data-default-tab="js" data-user="rdfriedl" class='codepen'>
 					<p>See the Pen <a href='http://codepen.io/rdfriedl/pen/bdWpZO/'>Scopes</a> by rdfriedl (<a href='http://codepen.io/rdfriedl'>@rdfriedl</a>) on <a href='http://codepen.io'>CodePen</a>.</p>
 					</div><script async src="//assets.codepen.io/assets/embed/ei.js"></script>
 

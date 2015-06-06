@@ -19,7 +19,7 @@
 	</head>
 
 	<body>
-		<a href="https://github.com/rdfriedl/block-script" target="_blank" class="git_fork_link" data-bind="style: {opacity: ($root.menu() == 'main')? 1 : 0}"><img src="res/imgs/forkme_right_darkblue.png"></a>
+		<a href="https://github.com/rdfriedl/bindings.js" class="git_fork_link" data-bind="style: {opacity: ($root.menu() == 'main')? 1 : 0}"><img src="res/imgs/forkme_right_darkblue.png"></a>
 				
 		<div class="container">
 			<div class="row clearfix">
@@ -37,41 +37,19 @@
 					<p>Bindings.js is a simple javascript html binding library. <br>
 					its purpose is to provide a simple and easy “Modal View” into javascript.</p>
 
-
 					<h3 id="note">NOTE:</h3>
 
 					<p>this library is in ealy stages of development, it <strong>dose</strong> contain bugs. <br>
 					this library uses javascript <code>Object.observe</code>, <code>Object.__defineGetter__</code> and <code>Object.__defineSetter__</code> <br>
 					use <a href="https://github.com/MaxArt2501/object-observe">object-observe</a> polyfill for browsers that dont suport <code>Object.observe</code></p>
 
-
 					<h3 id="using">Using</h3>
-			  		<div data-height="250" data-theme-id="15764" data-slug-hash="MwmyZg" data-default-tab="js" data-user="rdfriedl" class='codepen'><pre><code>//custome javascript object
-					myModal = {
-						title: &#39;Basic Bindings&#39;,
-					};
-
-					//create a modal
-					bindings.createModal(myModal);
-					//bind to dom element
-					bindings.applyBindings(myModal,document);</code></pre>
+			  		<div data-height="250" data-theme-id="15764" data-slug-hash="MwmyZg" data-default-tab="js" data-user="rdfriedl" class='codepen'>
 					<p>See the Pen <a href='http://codepen.io/rdfriedl/pen/MwmyZg/'>Basic Bindings</a> by rdfriedl (<a href='http://codepen.io/rdfriedl'>@rdfriedl</a>) on <a href='http://codepen.io'>CodePen</a>.</p>
 					</div><script async src="//assets.codepen.io/assets/embed/ei.js"></script>
 
 					<h3 id="functions">Functions</h3>
-					<div data-height="327" data-theme-id="15764" data-slug-hash="zGwKeb" data-default-tab="js" data-user="rdfriedl" class='codepen'><pre><code>//custome javascript object
-					myModal = {
-						title: &quot;Function&quot;,
-						number: 0,
-						action: function(){
-							alert(&#39;Hello World&#39;);
-						}
-					};
-
-					//create a modal
-					bindings.createModal(myModal);
-					//bind to dom element
-					bindings.applyBindings(myModal,document);</code></pre>
+					<div data-height="327" data-theme-id="15764" data-slug-hash="zGwKeb" data-default-tab="js" data-user="rdfriedl" class='codepen'>
 					<p>See the Pen <a href='http://codepen.io/rdfriedl/pen/zGwKeb/'>Functions</a> by rdfriedl (<a href='http://codepen.io/rdfriedl'>@rdfriedl</a>) on <a href='http://codepen.io'>CodePen</a>.</p>
 					</div><script async src="//assets.codepen.io/assets/embed/ei.js"></script>
 
