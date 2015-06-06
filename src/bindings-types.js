@@ -43,7 +43,7 @@ bindings.bindings['foreach'] = {
 	},
 	update: function(){
 		while (this.el.children.length !== 0) {
-		    this.el.children[0].remove();
+		    this.el.removeChild(this.el.children[0]);
 		}
 		this.src.update();
 		var val = this.scope.getValueFromValue(this.src.value);
@@ -59,7 +59,7 @@ bindings.bindings['foreach'] = {
 	},
 	unbind: function(){
 		while (this.el.children.length !== 0) {
-		    this.el.children[0].remove();
+		    this.el.removeChild(this.el.children[0]);
 		}
 		for (var k = 0; k < this.__foreach_children__.length; k++) {
 			var el = this.__foreach_children__[k].cloneNode(true);
@@ -79,7 +79,7 @@ bindings.bindings['repeat'] = {
 	},
 	update: function(){
 		while (this.el.children.length !== 0) {
-		    this.el.children[0].remove();
+		    this.el.removeChild(this.el.children[0]);
 		}
 		this.src.update();
 
@@ -92,7 +92,7 @@ bindings.bindings['repeat'] = {
 	},
 	unbind: function(){
 		while (this.el.children.length !== 0) {
-		    this.el.children[0].remove();
+		    this.el.removeChild(this.el.children[0]);
 		}
 		for (var k = 0; k < this.__foreach_children__.length; k++) {
 			var el = this.__foreach_children__[k].cloneNode(true);

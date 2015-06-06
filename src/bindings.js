@@ -553,5 +553,8 @@ bindings.Src.prototype = {
 }
 bindings.Src.prototype.constructor = bindings.Src;
 
+//fix for IE
+document.children = document.body.children;
+
 ctx.bindings = bindings;
-})(window)
+})(this);
