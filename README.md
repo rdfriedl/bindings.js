@@ -1,10 +1,12 @@
 ##**Bindings**
 Bindings.js is a simple javascript html binding library.
-its purpose is to provie simple and easy "Modal View" into javascript.
+its purpose is to provide a simple and easy "Modal View" for javascript.
 
 ###NOTE:
 this library is in ealy stages of development, it **dose** contain bugs.
-this library uses <code>Object.observe</code>, Getters and Setters;
+
+this library uses <code>Object.observe</code>, <code>Object.__defineGetter__</code> and <code>Object.__defineSetter__</code>.
+
 use [object-observe](https://github.com/MaxArt2501/object-observe) polyfill for browsers that dont suport <code>Object.observe</code>
 
 ### Using
