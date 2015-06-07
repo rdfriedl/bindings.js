@@ -1,3 +1,4 @@
+(function(){
 /**
  * the main NameSpace for bindings.js
  *
@@ -117,11 +118,13 @@ bindings = {
 			success: true,
 		}
 
-		var func = 'new Function(', args = [];
+		var func = 'new Function("', args = [];
 		var context = scope.value;
 
-		func += '"return ';
+		func += 'with(this){';
+		func += 'return ';
 		func += string;
+		func += '}';
 		func += '")';
 		func = eval(func);
 
@@ -203,8 +206,10 @@ bindings = {
 			context = scope.value;
 		}
 
-		func += '"return ';
+		func += '"with(this){';
+		func += 'return ';
 		func += string;
+		func += '}';
 		func += '")';
 		func = eval(func);
 
@@ -669,7 +674,7 @@ bindings.Binding.prototype = {
 			this.update();
 		}
 		catch(e){
-			console.error('failed to bind: { '+this.src.string+' } on element');
+			console.error('failed to bind: "'+this.src.string+'" on element');
 			console.error(this.el);
 			console.error(e);
 		}
@@ -786,9 +791,6 @@ if(!document.children){
 		return this.body.children;
 	})
 }
-
-(function(bindings){
-
 // binding types
 bindings.bindings['text'] = {
 	update: function(){
@@ -1122,5 +1124,5 @@ bindings.bindings['repeat'] = {
 		};
 	}
 }
-	
-})(bindings)
+
+})()

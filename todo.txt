@@ -1,3 +1,7 @@
 - test _eval with values as context
 - allow _eval & _evalRequires to access var on scope like (value)=(this.value)
 - add muti bindings, like bind-event and bind-attr
+- create classes for binding types
+- find a name for the scripts
+- use with for _eval ing the bindings
+- look into __commandLintAPI

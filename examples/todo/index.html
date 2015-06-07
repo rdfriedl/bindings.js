@@ -1,25 +1,23 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title bind-text="'Bindings - '+this.title"></title>
+		<title bind-text="'Bindings - '+title"></title>
 
 		<!-- pollyfill for firefox & IE -->
 		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
 
 		<!-- binding lib -->
-		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
-		<script type="text/javascript" src="../../src/bindings.js"></script>
-		<script type="text/javascript" src="../../src/bindings-types.js"></script>
+		<script type="text/javascript" src="../../dist/build.php"></script>
 	</head>
 	<body>
 		<a href="../">< back</a>
 
 		<h1>Todo list</h1>
-		<ul bind-foreach="this.items">
-			<li><span bind-text="this.title"></span></li>
+		<ul bind-foreach="items">
+			<li><span bind-text="title"></span></li>
 		</ul>
-		<form bind-submit="this.addItem(), this.item.title = ''">
-			<input type="text" placeHolder="something todo..." bind-value="this.item.title">
+		<form bind-submit="addItem(), item.title = ''">
+			<input type="text" placeHolder="something todo..." bind-value="item.title">
 			<button type="submit">Add</button>
 		</form>
 

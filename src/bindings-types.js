@@ -1,5 +1,3 @@
-(function(bindings){
-
 // binding types
 bindings.bindings['text'] = {
 	update: function(){
@@ -333,5 +331,3 @@ bindings.bindings['repeat'] = {
 		};
 	}
 }
-	
-})(bindings)

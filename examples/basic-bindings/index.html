@@ -1,31 +1,29 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title bind-text="'Bindings - '+this.title"></title>
+		<title bind-text="'Bindings - '+title"></title>
 
 		<!-- pollyfill for firefox & IE -->
 		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
 
 		<!-- binding lib -->
-		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
-		<script type="text/javascript" src="../../src/bindings.js"></script>
-		<script type="text/javascript" src="../../src/bindings-types.js"></script>
+		<script type="text/javascript" src="../../dist/build.php"></script>
 	</head>
 	<body>
 		<a href="../">< back</a>
 		
 		<!-- simple text binding -->
-		<h1 bind-text="this.title"></h1>
+		<h1 bind-text="title"></h1>
 
 		<b>Simple actions</b>
 		<br>
 		<button bind-click="console.log('testing')">console.log</button>
 		<br>
-		<button bind-click="this.action()">function in modal</button>
+		<button bind-click="action()">function in modal</button>
 		<br>
-		<button bind-click="this.text='changed!'">change</button> <i bind-text="this.text"></i>
+		<button bind-click="text='changed!'">change</button> <i bind-text="text"></i>
 		<br>
-		<button bind-click="this.number -= 1"> < </button><button bind-click="this.number += 1"> > </button> <i bind-text="this.number"></i>
+		<button bind-click="number -= 1"> < </button><button bind-click="number += 1"> > </button> <i bind-text="number"></i>
 
 		<script type="text/javascript">
 			myModal = {

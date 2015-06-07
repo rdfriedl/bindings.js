@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title bind-text="'Bindings - '+this.title"></title>
+		<title bind-text="'Bindings - '+title"></title>
 
 		<style type="text/css">
 			div{
@@ -20,9 +20,7 @@
 		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
 
 		<!-- binding lib -->
-		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
-		<script type="text/javascript" src="../../src/bindings.js"></script>
-		<script type="text/javascript" src="../../src/bindings-types.js"></script>
+		<script type="text/javascript" src="../../dist/build.php"></script>
 	</head>
 	<body>
 		<a href="../">< back</a>
@@ -31,23 +29,23 @@
 		
 		<p>Profile</p>
 		<div>
-			<p>name: <span bind-text="this.profile.name"></span></p>
-			<p>email: <span bind-text="this.profile.email"></span></p>
+			<p>name: <span bind-text="profile.name"></span></p>
+			<p>email: <span bind-text="profile.email"></span></p>
 		</div>
 
 		<p>Profile (using <i>bind-with</i>)</p>
-		<div bind-with="this.profile">
-			<p>name: <span bind-text="this.name"></span></p>
-			<p>email: <span bind-text="this.email"></span></p>
+		<div bind-with="profile">
+			<p>name: <span bind-text="name"></span></p>
+			<p>email: <span bind-text="email"></span></p>
 		</div>
 
 		<h1>bind-foreach</h1>
 
 		<p>List (using <i>bind-foreach</i>)</p>
-		<div bind-foreach="this.items">
+		<div bind-foreach="items">
 			<div>
-				<p>name: <span bind-text="this.name"></span></p>
-				<p>price: <span bind-text="this.price"></span></p>
+				<p>name: <span bind-text="name"></span></p>
+				<p>price: <span bind-text="price"></span></p>
 			</div>
 		</div>
 
