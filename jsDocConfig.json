@@ -2,6 +2,11 @@
     "source": {
         "include": [
             "src/bindings.js",
+            "src/modal.js",
+			"src/scope.js",
+			"src/value.js",
+			"src/binding.js",
+			"src/script.js",
             "src/bindings-types.js"
         ]
     }

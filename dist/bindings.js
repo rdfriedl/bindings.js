@@ -117,13 +117,20 @@ bindings = {
 			value: undefined,
 			success: true,
 		}
+		var addedScope = {
+			$modal: (scope.modal)? scope.modal.scope.value : undefined,
+			$parent: (scope.parent)? scope.parent.value : undefined
+		};
 
-		var func = 'new Function("', args = [];
+		var func = 'new Function("addedScope","', args = [];
 		var context = scope.value;
+		args.push(addedScope);
 
 		func += 'with(this){';
+		func += 'with(addedScope){';
 		func += 'return ';
 		func += string;
+		func += '}';
 		func += '}';
 		func += '")';
 		func = eval(func);
@@ -186,8 +193,14 @@ bindings = {
 			return o;
 		}
 
-		var func = 'new Function(', args = [];
+		var addedScope = {
+			$modal: (scope.modal)? buildContextFromScope(scope.modal.scope) : undefined,
+			$parent: (scope.parent)? buildContextFromScope(scope.parent) : undefined
+		};
+
+		var func = 'new Function("addedScope",', args = [];
 		var context = {};
+		args.push(addedScope);
 
 		//add scopeVars
 		for (var i in scopeVars) {
@@ -206,9 +219,12 @@ bindings = {
 			context = scope.value;
 		}
 
-		func += '"with(this){';
+		func += '"';
+		func += 'with(this){';
+		func += 'with(addedScope){';
 		func += 'return ';
 		func += string;
+		func += '}';
 		func += '}';
 		func += '")';
 		func = eval(func);
@@ -276,6 +292,12 @@ bindings = {
 	noop: function(){}
 }
 
+//fix for IE
+if(!document.children){
+	document.__defineGetter__('children',function(){
+		return this.body.children;
+	})
+}
 /**
  * Modal class
  *
@@ -285,7 +307,7 @@ bindings = {
  */
 bindings.Modal = function(object,options){
 	this.options = Object.create(this.options);
-	this.scope = new bindings.Scope('',object);
+	this.scope = new bindings.Scope('',object,this);
 
 	options = options || {};
 	for(var i in options){
@@ -360,22 +382,23 @@ bindings.Modal.prototype = {
 	}
 }
 bindings.Modal.prototype.constructor = bindings.Modal;
-
 /**
  * Reprsents a Object or Array on the a {@link bindings.Modal} or {@link bindings.Scope}
  *
  * @class
  * @param {String} Key - the key of this Scope in its parent.
  * @param {Object} Object - the Object this scope will handle.
- * @param {bindings.Modal|bindings.Scope} [Parent] - The parnet Modal or Scope for this Scope
+ * @param {bindings.Modal} Modal - The Modal this scope belongs to
+ * @param {bindings.Scope} [Parent] - The parnet Scope for this Scope
  */
-bindings.Scope = function(key,data,parent){ //creates scope object from data
+bindings.Scope = function(key,data,modal,parent){ //creates scope object from data
 	data = data || {};
 	this.key = key || '';
 	this.value = data;
 	this.values = (data.hasOwnProperty('length'))? [] : {};
 	this.events = {};
 	this.parent = parent;
+	this.modal = modal;
 	this.setKeys(data);
 
 	//listen for events on object
@@ -387,6 +410,7 @@ bindings.Scope.prototype = {
 	events: {},
 	object: undefined,
 	parent: undefined,
+	modal: undefined,
 	values: undefined,
 	getKey: function(value){ //finds a key based on a value
 		for (var i in this.values) {
@@ -407,7 +431,7 @@ bindings.Scope.prototype = {
 		if(this.values[key] == undefined){
 			//add it
 			if(typeof value == 'object'){
-				this.values[key] = new bindings.Scope(key,value,this);
+				this.values[key] = new bindings.Scope(key,value,this.modal,this);
 			}
 			else{
 				this.values[key] = new bindings.Value(key,value,this);
@@ -516,7 +540,6 @@ bindings.Scope.prototype = {
 	}
 }
 bindings.Scope.prototype.constructor = bindings.Scope;
-
 /**
  * Reprsents a value in a {@link bindings.Scope}.
  *
@@ -626,9 +649,8 @@ bindings.Value.prototype = {
 	}
 }
 bindings.Value.prototype.constructor = bindings.Value;
-
 /**
- * Reprsents a binding between a dom element and a {@link bindings.Value} or {@link bindings.Scope}.
+ * Reprsents a binding between a dom element and a {@link bindings.Value|Value} or {@link bindings.Scope|Scope}.
  *
  * @class
  * @param {Node} Element - The element to bind to.
@@ -723,7 +745,6 @@ bindings.Binding.prototype = {
 	}
 }
 bindings.Binding.prototype.constructor = bindings.Binding;
-
 /**
  * Reprsents a srcipt on a dom element.
  *
@@ -784,13 +805,6 @@ bindings.Script.prototype = {
 	}
 }
 bindings.Script.prototype.constructor = bindings.Script;
-
-//fix for IE
-if(!document.children){
-	document.__defineGetter__('children',function(){
-		return this.body.children;
-	})
-}
 // binding types
 bindings.bindings['text'] = {
 	update: function(){
