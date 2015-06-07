@@ -1,2 +1,3 @@
 - test _eval with values as context
 - allow _eval & _evalRequires to access var on scope like (value)=(this.value)
+- add muti bindings, like bind-event and bind-attr

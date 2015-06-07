@@ -4,9 +4,155 @@
 bindings.bindings['text'] = {
 	update: function(){
 		this.src.update();
-		this.el.textContent = this.src.value;
+		this.el.innerText = this.src.value;
 	}
 }
+
+bindings.bindings['html'] = {
+	update: function(){
+		this.src.update();
+		this.el.innerHTML = this.src.value;
+	}
+}
+
+bindings.bindings['href'] = {
+	update: function(){
+		this.src.update();
+		this.el.setAttribute('href',this.src.value);
+	}
+}
+
+bindings.bindings['src'] = {
+	update: function(){
+		this.src.update();
+		this.el.setAttribute('src',this.src.value);
+	}
+}
+
+bindings.bindings['display'] = {
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.el.style.removeProperty('display','none');
+		}
+		else{
+			this.el.style.setProperty('display','none');
+		}
+	}
+}
+
+bindings.bindings['visible'] = {
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.el.style.setProperty('visibility','visible');
+		}
+		else{
+			this.el.style.setProperty('visibility','hidden');
+		}
+	}
+}
+
+bindings.bindings['enabled'] = {
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.el.removeAttribute('disabled');
+		}
+		else{
+			this.el.setAttribute('disabled','disabled');
+		}
+	}
+}
+
+bindings.bindings['disabled'] = {
+	update: function(){
+		this.src.update();
+		if(this.src.value){
+			this.el.setAttribute('disabled','disabled');
+		}
+		else{
+			this.el.removeAttribute('disabled');
+		}
+	}
+}
+
+bindings.bindings['if'] = {
+	children: [],
+	restoreChildren: function(){
+		if(!this.children.length){
+			for (var i = 0; i < this.children.length; i++) {
+				 this.el.appendChild(this.children[i]);
+			};
+		}
+	},
+	removeChildren: function(){
+		if(this.children.length){
+			while (this.el.children.length !== 0) {
+			    this.el.removeChild(this.el.children[0]);
+			}
+		}
+	},
+	bind: function(){
+		for (var i = 0; i < this.el.children.length; i++) {
+			this.children.push(this.el.children[i]);
+		};
+	},
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.restoreChildren();
+		}
+		else{
+			this.removeChildren();
+		}
+	}
+}
+
+bindings.bindings['ifnot'] = {
+	children: [],
+	restoreChildren: function(){
+		if(!this.children.length){
+			for (var i = 0; i < this.children.length; i++) {
+				 this.el.appendChild(this.children[i]);
+			};
+		}
+	},
+	removeChildren: function(){
+		if(this.children.length){
+			while (this.el.children.length !== 0) {
+			    this.el.removeChild(this.el.children[0]);
+			}
+		}
+	},
+	bind: function(){
+		for (var i = 0; i < this.el.children.length; i++) {
+			this.children.push(this.el.children[i]);
+		};
+	},
+	update: function(){
+		this.src.update();
+		if(!this.src.value){
+			this.restoreChildren();
+		}
+		else{
+			this.removeChildren();
+		}
+	}
+}
+
+// bindings.bindings['attr'] = { NOTE: have to have muti bindings first
+// 	update: function(){
+// 		this.src.update();
+// 		var attrs = this.src.value;
+
+// 		if(typeof attrs != 'object') throw new Error('bind-attr requires a object');
+
+// 		for (var i in attrs) {
+// 			this.el.setAttribute(i,attrs[i]);
+// 		};
+// 	}
+// }
 
 bindings.bindings['click'] = {
 	_event: undefined,
@@ -22,6 +168,19 @@ bindings.bindings['click'] = {
 	}
 }
 
+bindings.bindings['dblclick'] = {
+	_event: undefined,
+	bind: function(){
+		this._event = function(){
+			this.src.update();
+		}.bind(this)
+
+		this.el.addEventListener('dblclick',this._event);
+	},
+	unbind: function(){
+		this.el.removeEventListener('dblclick',this._event);
+	}
+}
 bindings.bindings['submit'] = {
 	_event: undefined,
 	bind: function(){
@@ -79,9 +238,11 @@ bindings.bindings['live-update'] = {
 		}
 	},
 	bind: function(){
+		this.el.addEventListener('keypress',this.event.bind(this))
 		this.el.addEventListener('keyup',this.event.bind(this))
 	},
 	unbind: function(){
+		this.el.removeEventListener('keypress',this.event.bind(this))
 		this.el.removeEventListener('keyup',this.event.bind(this))
 	}
 }

@@ -1,16 +1,47 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bindings.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bindings.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * the main NameSpace for bindings.js
  *
- * @namespace bindings
+ * @namespace Bindings.js
  */
+
 bindings = {
 	bindings: {},
 
 	/**
-	 * Creates a new {@link bindings.Modal} based on an Object
+	 * use this to create a new Modal
 	 *
-	 * @param {Object} Object - The Object that the {@link bindings.Modal} will use.
-	 * @param {Object} Options - An Object that contains options.
+	 *
+	 *
+	 *
+	 * @public
 	 */
 	createModal: function(object,options){
 		var modal = new this.Modal(object,options);
@@ -18,13 +49,6 @@ bindings = {
 
 		return object;
 	},
-
-	/**
-	 * Binds a {@link bindings.Modal} to a dom element.
-	 * 
-	 * @param {bindings.Modal} Modal - The Modal to bind.
-	 * @param {Node} Element - The Element to bind to.
-	 */
 	applyBindings: function(modal,el){
 		modal = modal || {};
 		if(modal instanceof this.Modal){
@@ -37,7 +61,7 @@ bindings = {
 
 	_applyBindings: function(el,scope){
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
+		if(!(scope instanceof bindings.Scope) &amp;&amp; !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 		var _bindings = [];
 
 		//remove old bindings
@@ -54,7 +78,7 @@ bindings = {
 
 		//loop through and bind children
 		if(el.children){
-			for (var i = 0; i < el.children.length; i++) {
+			for (var i = 0; i &lt; el.children.length; i++) {
 				el.children[i].__scope__ = el.children[i].__scope__ || scope;
 				bindings._applyBindings(el.children[i],el.children[i].__scope__);
 				_bindings = _bindings.concat(el.children[i].__bindings__);
@@ -65,11 +89,11 @@ bindings = {
 	},
 	_parseBindings: function(el,scope){ //parses bindings for a specific element 
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
+		if(!(scope instanceof bindings.Scope) &amp;&amp; !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 
 		var _bindings = [];
 		var attrs = el.attributes || [];
-		for (var i = 0; i < attrs.length; i++) {
+		for (var i = 0; i &lt; attrs.length; i++) {
 			var attr = attrs.item(i);
 			var id = attr.name;
 			//find the binding attrs and extract the src
@@ -83,7 +107,7 @@ bindings = {
 		return _bindings;
 	},
 	_modalChange: function(scope,data){ //handles events from the modal object changing
-		for (var i = 0; i < data.length; i++) {
+		for (var i = 0; i &lt; data.length; i++) {
 			if(data[i].name == '_binding') continue;
 
 			switch(data[i].type){
@@ -109,7 +133,7 @@ bindings = {
 		}
 	},
 	_eval: function(string,scope){
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
+		if(!(scope instanceof bindings.Scope) &amp;&amp; !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 
 		string = string || '';
 		var data = {
@@ -135,7 +159,7 @@ bindings = {
 		return data;
 	},
 	_evalRequires: function(string,scope){ //only binds to values/scopes on the first level
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
+		if(!(scope instanceof bindings.Scope) &amp;&amp; !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 
 		string = string || '';
 		var data = {
@@ -194,7 +218,7 @@ bindings = {
 		if(scope instanceof bindings.Scope){
 			context = buildContextFromScope(scope);
 
-			//reset gets & sets
+			//reset gets &amp; sets
 			data.gets = [];
 			data.sets = [];
 			data.requires = [];
@@ -217,7 +241,7 @@ bindings = {
 
 		//remove duplicates
 		var d = [];
-		for (var i = 0; i < data.requires.length; i++) {
+		for (var i = 0; i &lt; data.requires.length; i++) {
 			if(d.indexOf(data.requires[i]) == -1) d.push(data.requires[i]);
 		};
 		data.requires = d;
@@ -235,13 +259,13 @@ bindings = {
 		return data;
 	},
 	_duplicateObject: function(obj2,count){
-		if(typeof obj2 == 'object' && obj2 !== null){
+		if(typeof obj2 == 'object' &amp;&amp; obj2 !== null){
 			count = (count !== undefined)? count : 20;
 			if(count > 0){
 				// see if its an array
 				if(obj2.hasOwnProperty('length')){
 					var obj = []
-					for (var i = 0; i < obj2.length; i++) {
+					for (var i = 0; i &lt; obj2.length; i++) {
 						if(typeof obj2[i] !== 'object'){
 							obj[i] = obj2[i]
 						}
@@ -271,13 +295,7 @@ bindings = {
 	noop: function(){}
 }
 
-/**
- * Modal class
- *
- * @class
- * @param {Object} Object - The object that this modal will use.
- * @param {Object} Options - A object that contains options.
- */
+// modal
 bindings.Modal = function(object,options){
 	this.options = Object.create(this.options);
 	this.scope = new bindings.Scope('',object);
@@ -290,27 +308,13 @@ bindings.Modal = function(object,options){
 	return this;
 };
 bindings.Modal.prototype = {
-	/**
-	 * @property {Array} Bindings - An Array of {@link bindings.Binding} made with this Modals {@link bindings.Modal#scope|Scope} and its dom element its bound to
-	 *
-	 */
 	bindings: [], //an array of bindings with dom elements
 	options: {
 		element: document
 	},
-
-	/**
-	 * @property {bindings.Scope} scope - The Root {@link bindings.Scope|Scope} for this Modal
-	 */
 	scope: undefined,
-
-	/**
-	 * Binds this Modals {@link bindings.Modal#scope|Scope} to a dom element
-	 *
-	 * @param {Node} Element - The element to bind to.
-	 */
 	applyBindings: function(el){
-		if(!(el instanceof Node) && el) throw new Error('first argument has to be a Node');
+		if(!(el instanceof Node) &amp;&amp; el) throw new Error('first argument has to be a Node');
 
 		if(el) this.options.element = el;
 
@@ -326,7 +330,7 @@ bindings.Modal.prototype = {
 	getBinding: function(el){
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
 
-		for (var i = 0; i < this.bindings.length; i++) {
+		for (var i = 0; i &lt; this.bindings.length; i++) {
 			if(this.bindings[i].el === el){
 				return this.bindings[i];
 			}
@@ -339,7 +343,7 @@ bindings.Modal.prototype = {
 		if(binding){
 			binding._unbind();
 
-			for (var i = 0; i < this.bindings.length; i++) {
+			for (var i = 0; i &lt; this.bindings.length; i++) {
 				if(this.bindings[i].el === el){
 					delete this.bindings[i];
 					return;
@@ -348,7 +352,7 @@ bindings.Modal.prototype = {
 		}
 	},
 	removeAllBindings: function(){
-		for (var i = 0; i < this.bindings.length; i++) {
+		for (var i = 0; i &lt; this.bindings.length; i++) {
 			this.bindings[i]._unbind();
 		};
 		this.bindings = [];
@@ -356,14 +360,7 @@ bindings.Modal.prototype = {
 }
 bindings.Modal.prototype.constructor = bindings.Modal;
 
-/**
- * Reprsents a Object or Array on the a {@link bindings.Modal} or {@link bindings.Scope}
- *
- * @class
- * @param {String} Key - the key of this Scope in its parent.
- * @param {Object} Object - the Object this scope will handle.
- * @param {bindings.Modal|bindings.Scope} [Parent] - The parnet Modal or Scope for this Scope
- */
+// scope
 bindings.Scope = function(key,data,parent){ //creates scope object from data
 	data = data || {};
 	this.key = key || '';
@@ -390,14 +387,6 @@ bindings.Scope.prototype = {
 			}
 		};
 	},
-
-	/**
-	 * Sets a key in this Scope
-	 *
-	 * @param {String} Key - The key to set.
-	 * @param {*} Value
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
 	setKey: function(key,value,dontFire){
 		if(this.values[key] == undefined){
 			//add it
@@ -417,13 +406,6 @@ bindings.Scope.prototype = {
 		}
 		if(!dontFire) this.emit('change',this);
 	},
-
-	/**
-	 * Sets mutiple keys in the Scope
-	 *
-	 * @param {Object} Keys - An Object consisting of key - value pares.
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
 	setKeys: function(keys,dontFire){
 		keys = keys || {};
 		for (var i in keys) {
@@ -431,13 +413,6 @@ bindings.Scope.prototype = {
 		};
 		if(!dontFire) this.emit('change',this);
 	},
-
-	/**
-	 * Removes a Key from this Scope
-	 *
-	 * @param {String} Key
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
 	removeKey: function(key,dontFire){
 		delete this.values[key];
 		if(!dontFire) this.emit('change',this);
@@ -450,51 +425,26 @@ bindings.Scope.prototype = {
 			this.updateKey(i,keys[i]);
 		}
 	},
-
-	/**
-	 * Fires the change event
-	 */
+	getValue: function(key){
+		return this.values[key];
+	},
 	update: function(){
 		this.emit('change',this)
 	},
-
-	/**
-	 * Listen for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
 	on: function(event,fn,ctx){
 		if(!this.events[event]) this.events[event] = [];
 		if(ctx) fn = fn.bind(ctx);
 		this.events[event].push(fn);
 	},
-
-	/**
-	 * Stop Listening for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
 	off: function(event,fn){
 		if(!this.events[event]) this.events[event] = [];
 		if(this.events[event].indexOf(fn) !== -1){
 			this.events[event].splice(this.events[event].indexOf(fn),1);
 		}
 	},
-
-	/**
-	 * Fires an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {*} Data - The data to be sent to the listeners
-	 */
 	emit: function(event,data,direction){
 		if(!this.events[event]) this.events[event] = [];
-		for (var i = 0; i < this.events[event].length; i++) {
+		for (var i = 0; i &lt; this.events[event].length; i++) {
 		 	this.events[event][i](data);
 	 	};
 	 	//send event in direction
@@ -512,14 +462,7 @@ bindings.Scope.prototype = {
 }
 bindings.Scope.prototype.constructor = bindings.Scope;
 
-/**
- * Reprsents a value in a {@link bindings.Scope}.
- *
- * @class
- * @param {String} Key - The key of this value in its parent scope.
- * @param {*} Value - The value to watch.
- * @param {bindings.Scope} Parent - The scope this value blongs to.
- */
+// value
 bindings.Value = function(key,val,parent){
 	this.key = key;
 	this.value = val;
@@ -533,14 +476,6 @@ bindings.Value.prototype = {
 	value: undefined,
 	parent: undefined,
 	events: {},
-
-	/**
-	 * Listen for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
 	on: function(event,fn,ctx){
 		if(!this.events[event]){
 			this.events[event] = [];
@@ -548,14 +483,6 @@ bindings.Value.prototype = {
 		if(ctx) fn = fn.bind(ctx);
 		this.events[event].push(fn);
 	},
-
-	/**
-	 * Stop Listening for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
 	off: function(event,fn){
 		if(!this.events[event]){
 			this.events[event] = [];
@@ -564,19 +491,11 @@ bindings.Value.prototype = {
 			this.events[event].splice(this.events[event].indexOf(fn),1);
 		}
 	},
-
-	/**
-	 * Fires an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {*} Data - The data to be sent to the listeners
-	 */
 	emit: function(event,data,direction){
 		if(!this.events[event]){
 			this.events[event] = [];
 		}
-		for (var i = 0; i < this.events[event].length; i++) {
+		for (var i = 0; i &lt; this.events[event].length; i++) {
 		 	this.events[event][i](data);
 	 	};
 	 	//send event in direction
@@ -589,54 +508,27 @@ bindings.Value.prototype = {
 	 			break;
 	 	}
 	},
-
-	/**
-	 * Sets the value
-	 *
-	 * @param {*} Value
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	setValue: function(val,dontFire){
+	setValue: function(val){
 		this.value = (val !== undefined)? val : this.value;
-		if(!dontFire) this.emit('change',val);
+		this.emit('change',val);
 	},
-
-	/**
-	 * Sets the value on the scopes object
-	 *
-	 * @private
-	 * @param {*} Value
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	updateValue: function(val){
+	updateValue: function(val){ //changes value on the modal object
 		//just set the value, dont bother about the change event or sett my value, the scope will handle that
 		this.parent.updateKey(this.key,val);
 	},
-
-	/**
-	 * Fires the change event
-	 */
 	update: function(){
 		this.emit('change',this.value);
 	}
 }
 bindings.Value.prototype.constructor = bindings.Value;
 
-/**
- * Reprsents a binding between a dom element and a {@link bindings.Value} or {@link bindings.Scope}.
- *
- * @class
- * @param {Node} Element - The element to bind to.
- * @param {String} String - The script to run.
- * @param {bindings.Scope} Scope - The scope this binding will be using.
- * @param {bindings.Type} Type - The type of binding this is.
- */
+// binding
 bindings.Binding = function(el,srcString,scope,type){ //type is id in the bindings array
-	if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('third argument has to be a Scope or a Value');
+	if(!(scope instanceof bindings.Scope) &amp;&amp; !(scope instanceof bindings.Value)) throw new Error('third argument has to be a Scope or a Value');
 
 	this.el = el;
 	this.scope = scope;
-	this.src = new bindings.Script(srcString,this.scope);
+	this.src = new bindings.Src(srcString,this.scope);
 	this.type = type;
 
 	//apply type
@@ -681,7 +573,7 @@ bindings.Binding.prototype = {
 	},
 	_unbindEvents: function(){
 		//unbind all events
-		for (var i = 0; i < this.events.length; i++) {
+		for (var i = 0; i &lt; this.events.length; i++) {
 			this.events[i].obj.off(this.events[i].type,this.events[i].func);
 		};
 		this.events = [];
@@ -689,7 +581,7 @@ bindings.Binding.prototype = {
 	_bindEvents: function(){
 		//bind events
 		var a = this.src.getRequires();
-		for (var i = 0; i < a.length; i++) {
+		for (var i = 0; i &lt; a.length; i++) {
 			this.events.push({
 				type: 'change',
 				func: this._update.bind(this),
@@ -719,22 +611,16 @@ bindings.Binding.prototype = {
 }
 bindings.Binding.prototype.constructor = bindings.Binding;
 
-/**
- * Reprsents a srcipt on a dom element.
- *
- * @class
- * @param {String} Script - The Script as a String.
- * @param {bindings.Scope} Scope - The scope this script will run on.
- */
-bindings.Script = function(srcString,scope){
-	if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
+// src
+bindings.Src = function(srcString,scope){
+	if(!(scope instanceof bindings.Scope) &amp;&amp; !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 
 	this.string = srcString || '';
 	this.scope = scope;
 
 	return this;
 }
-bindings.Script.prototype = {
+bindings.Src.prototype = {
 	value: undefined,
 	success: true,
 	string: '',
@@ -762,7 +648,7 @@ bindings.Script.prototype = {
 			var data = evalFunction('this',this.scope);
 
 			if(data !== undefined){
-				if(!data.hasOwnProperty('value') && !data.hasOwnProperty('success')){
+				if(!data.hasOwnProperty('value') &amp;&amp; !data.hasOwnProperty('success')){
 					throw new Error('function dose not return a object or returned object is missing values');
 				}
 			}
@@ -778,11 +664,33 @@ bindings.Script.prototype = {
 		}
 	}
 }
-bindings.Script.prototype.constructor = bindings.Script;
+bindings.Src.prototype.constructor = bindings.Src;
 
 //fix for IE
 if(!document.children){
 	document.__defineGetter__('children',function(){
 		return this.body.children;
 	})
-}
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="Bindings.js.html">js</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Sat Jun 06 2015 22:13:10 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

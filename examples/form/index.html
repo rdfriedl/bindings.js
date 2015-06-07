@@ -17,12 +17,12 @@
 		<h1>Login form <small>(<i>bind-submit</i> & <i>bind-value</i>)</small></h1>
 		<form bind-submit="this.done()">
 			<label>Email</label>
-			<input type="text" bind-value="this.email" bind-live-update><small><i bind-text="this.email"></i></small>
+			<input type="text" bind-value="this.email" bind-live-update><small bind-text="this.email"></small>
 			<br>
 			<label>Password</label>
-			<input type="text" bind-value="this.password" bind-live-update><small><i bind-text="this.password"></i></small>
+			<input type="text" bind-value="this.password" bind-live-update><small bind-text="this.password"></small>
 			<br>
-			<button type="submit">Login</button>
+			<button type="submit" bind-enabled="this.email.length & this.password.length">Login</button>
 		</form>
 
 		<script type="text/javascript">

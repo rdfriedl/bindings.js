@@ -1,48 +1,30 @@
-(function(ctx){
-
-function duplicateObject(obj2,count){
-	if(typeof obj2 == 'object' && obj2 !== null){
-		count = (count !== undefined)? count : 20;
-		if(count > 0){
-			// see if its an array
-			if(obj2.hasOwnProperty('length')){
-				var obj = []
-				for (var i = 0; i < obj2.length; i++) {
-					if(typeof obj2[i] !== 'object'){
-						obj[i] = obj2[i]
-					}
-					else{
-						obj[i] = duplicateObject(obj2[i],count-1)
-					}
-				};
-			}
-			else{
-				var obj = {}
-				for (var i in obj2){
-					if(typeof obj2[i] !== 'object'){
-						obj[i] = obj2[i]
-					}
-					else{
-						obj[i] = duplicateObject(obj2[i],count-1)
-					}
-				}
-			}
-		}
-		return obj;
-	}
-	else{
-		return obj2
-	}
-}
-	
+/**
+ * the main NameSpace for bindings.js
+ *
+ * @namespace bindings
+ */
 bindings = {
 	bindings: {},
+
+	/**
+	 * Creates a new {@link bindings.Modal} based on an Object
+	 *
+	 * @param {Object} Object - The Object that the {@link bindings.Modal} will use.
+	 * @param {Object} Options - An Object that contains options.
+	 */
 	createModal: function(object,options){
 		var modal = new this.Modal(object,options);
 		object._binding = modal;
 
 		return object;
 	},
+
+	/**
+	 * Binds a {@link bindings.Modal} to a dom element.
+	 * 
+	 * @param {bindings.Modal} Modal - The Modal to bind.
+	 * @param {Node} Element - The Element to bind to.
+	 */
 	applyBindings: function(modal,el){
 		modal = modal || {};
 		if(modal instanceof this.Modal){
@@ -252,10 +234,50 @@ bindings = {
 		data.success = !!data.value;
 		return data;
 	},
+	_duplicateObject: function(obj2,count){
+		if(typeof obj2 == 'object' && obj2 !== null){
+			count = (count !== undefined)? count : 20;
+			if(count > 0){
+				// see if its an array
+				if(obj2.hasOwnProperty('length')){
+					var obj = []
+					for (var i = 0; i < obj2.length; i++) {
+						if(typeof obj2[i] !== 'object'){
+							obj[i] = obj2[i]
+						}
+						else{
+							obj[i] = bindings._duplicateObject(obj2[i],count-1)
+						}
+					};
+				}
+				else{
+					var obj = {}
+					for (var i in obj2){
+						if(typeof obj2[i] !== 'object'){
+							obj[i] = obj2[i]
+						}
+						else{
+							obj[i] = bindings._duplicateObject(obj2[i],count-1)
+						}
+					}
+				}
+			}
+			return obj;
+		}
+		else{
+			return obj2
+		}
+	},
 	noop: function(){}
 }
 
-// modal
+/**
+ * Modal class
+ *
+ * @class
+ * @param {Object} Object - The object that this modal will use.
+ * @param {Object} Options - A object that contains options.
+ */
 bindings.Modal = function(object,options){
 	this.options = Object.create(this.options);
 	this.scope = new bindings.Scope('',object);
@@ -268,11 +290,25 @@ bindings.Modal = function(object,options){
 	return this;
 };
 bindings.Modal.prototype = {
+	/**
+	 * @property {Array} Bindings - An Array of {@link bindings.Binding} made with this Modals {@link bindings.Modal#scope|Scope} and its dom element its bound to
+	 *
+	 */
 	bindings: [], //an array of bindings with dom elements
 	options: {
 		element: document
 	},
+
+	/**
+	 * @property {bindings.Scope} scope - The Root {@link bindings.Scope|Scope} for this Modal
+	 */
 	scope: undefined,
+
+	/**
+	 * Binds this Modals {@link bindings.Modal#scope|Scope} to a dom element
+	 *
+	 * @param {Node} Element - The element to bind to.
+	 */
 	applyBindings: function(el){
 		if(!(el instanceof Node) && el) throw new Error('first argument has to be a Node');
 
@@ -320,7 +356,14 @@ bindings.Modal.prototype = {
 }
 bindings.Modal.prototype.constructor = bindings.Modal;
 
-// scope
+/**
+ * Reprsents a Object or Array on the a {@link bindings.Modal} or {@link bindings.Scope}
+ *
+ * @class
+ * @param {String} Key - the key of this Scope in its parent.
+ * @param {Object} Object - the Object this scope will handle.
+ * @param {bindings.Modal|bindings.Scope} [Parent] - The parnet Modal or Scope for this Scope
+ */
 bindings.Scope = function(key,data,parent){ //creates scope object from data
 	data = data || {};
 	this.key = key || '';
@@ -347,6 +390,14 @@ bindings.Scope.prototype = {
 			}
 		};
 	},
+
+	/**
+	 * Sets a key in this Scope
+	 *
+	 * @param {String} Key - The key to set.
+	 * @param {*} Value
+	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
+	 */
 	setKey: function(key,value,dontFire){
 		if(this.values[key] == undefined){
 			//add it
@@ -366,6 +417,13 @@ bindings.Scope.prototype = {
 		}
 		if(!dontFire) this.emit('change',this);
 	},
+
+	/**
+	 * Sets mutiple keys in the Scope
+	 *
+	 * @param {Object} Keys - An Object consisting of key - value pares.
+	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
+	 */
 	setKeys: function(keys,dontFire){
 		keys = keys || {};
 		for (var i in keys) {
@@ -373,6 +431,13 @@ bindings.Scope.prototype = {
 		};
 		if(!dontFire) this.emit('change',this);
 	},
+
+	/**
+	 * Removes a Key from this Scope
+	 *
+	 * @param {String} Key
+	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
+	 */
 	removeKey: function(key,dontFire){
 		delete this.values[key];
 		if(!dontFire) this.emit('change',this);
@@ -385,23 +450,48 @@ bindings.Scope.prototype = {
 			this.updateKey(i,keys[i]);
 		}
 	},
-	getValue: function(key){
-		return this.values[key];
-	},
+
+	/**
+	 * Fires the change event
+	 */
 	update: function(){
 		this.emit('change',this)
 	},
+
+	/**
+	 * Listen for an event
+	 *
+	 * @public
+	 * @param {String} Event
+	 * @param {Function} Handler - The function that will be called when the event fires
+	 */
 	on: function(event,fn,ctx){
 		if(!this.events[event]) this.events[event] = [];
 		if(ctx) fn = fn.bind(ctx);
 		this.events[event].push(fn);
 	},
+
+	/**
+	 * Stop Listening for an event
+	 *
+	 * @public
+	 * @param {String} Event
+	 * @param {Function} Handler - The function that will be called when the event fires
+	 */
 	off: function(event,fn){
 		if(!this.events[event]) this.events[event] = [];
 		if(this.events[event].indexOf(fn) !== -1){
 			this.events[event].splice(this.events[event].indexOf(fn),1);
 		}
 	},
+
+	/**
+	 * Fires an event
+	 *
+	 * @public
+	 * @param {String} Event
+	 * @param {*} Data - The data to be sent to the listeners
+	 */
 	emit: function(event,data,direction){
 		if(!this.events[event]) this.events[event] = [];
 		for (var i = 0; i < this.events[event].length; i++) {
@@ -422,7 +512,14 @@ bindings.Scope.prototype = {
 }
 bindings.Scope.prototype.constructor = bindings.Scope;
 
-// value
+/**
+ * Reprsents a value in a {@link bindings.Scope}.
+ *
+ * @class
+ * @param {String} Key - The key of this value in its parent scope.
+ * @param {*} Value - The value to watch.
+ * @param {bindings.Scope} Parent - The scope this value blongs to.
+ */
 bindings.Value = function(key,val,parent){
 	this.key = key;
 	this.value = val;
@@ -436,6 +533,14 @@ bindings.Value.prototype = {
 	value: undefined,
 	parent: undefined,
 	events: {},
+
+	/**
+	 * Listen for an event
+	 *
+	 * @public
+	 * @param {String} Event
+	 * @param {Function} Handler - The function that will be called when the event fires
+	 */
 	on: function(event,fn,ctx){
 		if(!this.events[event]){
 			this.events[event] = [];
@@ -443,6 +548,14 @@ bindings.Value.prototype = {
 		if(ctx) fn = fn.bind(ctx);
 		this.events[event].push(fn);
 	},
+
+	/**
+	 * Stop Listening for an event
+	 *
+	 * @public
+	 * @param {String} Event
+	 * @param {Function} Handler - The function that will be called when the event fires
+	 */
 	off: function(event,fn){
 		if(!this.events[event]){
 			this.events[event] = [];
@@ -451,6 +564,14 @@ bindings.Value.prototype = {
 			this.events[event].splice(this.events[event].indexOf(fn),1);
 		}
 	},
+
+	/**
+	 * Fires an event
+	 *
+	 * @public
+	 * @param {String} Event
+	 * @param {*} Data - The data to be sent to the listeners
+	 */
 	emit: function(event,data,direction){
 		if(!this.events[event]){
 			this.events[event] = [];
@@ -468,27 +589,54 @@ bindings.Value.prototype = {
 	 			break;
 	 	}
 	},
-	setValue: function(val){
+
+	/**
+	 * Sets the value
+	 *
+	 * @param {*} Value
+	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
+	 */
+	setValue: function(val,dontFire){
 		this.value = (val !== undefined)? val : this.value;
-		this.emit('change',val);
+		if(!dontFire) this.emit('change',val);
 	},
-	updateValue: function(val){ //changes value on the modal object
+
+	/**
+	 * Sets the value on the scopes object
+	 *
+	 * @private
+	 * @param {*} Value
+	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
+	 */
+	updateValue: function(val){
 		//just set the value, dont bother about the change event or sett my value, the scope will handle that
 		this.parent.updateKey(this.key,val);
 	},
+
+	/**
+	 * Fires the change event
+	 */
 	update: function(){
 		this.emit('change',this.value);
 	}
 }
 bindings.Value.prototype.constructor = bindings.Value;
 
-// binding
+/**
+ * Reprsents a binding between a dom element and a {@link bindings.Value} or {@link bindings.Scope}.
+ *
+ * @class
+ * @param {Node} Element - The element to bind to.
+ * @param {String} String - The script to run.
+ * @param {bindings.Scope} Scope - The scope this binding will be using.
+ * @param {bindings.Type} Type - The type of binding this is.
+ */
 bindings.Binding = function(el,srcString,scope,type){ //type is id in the bindings array
 	if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('third argument has to be a Scope or a Value');
 
 	this.el = el;
 	this.scope = scope;
-	this.src = new bindings.Src(srcString,this.scope);
+	this.src = new bindings.Script(srcString,this.scope);
 	this.type = type;
 
 	//apply type
@@ -571,8 +719,14 @@ bindings.Binding.prototype = {
 }
 bindings.Binding.prototype.constructor = bindings.Binding;
 
-// src
-bindings.Src = function(srcString,scope){
+/**
+ * Reprsents a srcipt on a dom element.
+ *
+ * @class
+ * @param {String} Script - The Script as a String.
+ * @param {bindings.Scope} Scope - The scope this script will run on.
+ */
+bindings.Script = function(srcString,scope){
 	if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
 
 	this.string = srcString || '';
@@ -580,7 +734,7 @@ bindings.Src = function(srcString,scope){
 
 	return this;
 }
-bindings.Src.prototype = {
+bindings.Script.prototype = {
 	value: undefined,
 	success: true,
 	string: '',
@@ -624,7 +778,7 @@ bindings.Src.prototype = {
 		}
 	}
 }
-bindings.Src.prototype.constructor = bindings.Src;
+bindings.Script.prototype.constructor = bindings.Script;
 
 //fix for IE
 if(!document.children){
@@ -639,9 +793,155 @@ if(!document.children){
 bindings.bindings['text'] = {
 	update: function(){
 		this.src.update();
-		this.el.textContent = this.src.value;
+		this.el.innerText = this.src.value;
 	}
 }
+
+bindings.bindings['html'] = {
+	update: function(){
+		this.src.update();
+		this.el.innerHTML = this.src.value;
+	}
+}
+
+bindings.bindings['href'] = {
+	update: function(){
+		this.src.update();
+		this.el.setAttribute('href',this.src.value);
+	}
+}
+
+bindings.bindings['src'] = {
+	update: function(){
+		this.src.update();
+		this.el.setAttribute('src',this.src.value);
+	}
+}
+
+bindings.bindings['display'] = {
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.el.style.removeProperty('display','none');
+		}
+		else{
+			this.el.style.setProperty('display','none');
+		}
+	}
+}
+
+bindings.bindings['visible'] = {
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.el.style.setProperty('visibility','visible');
+		}
+		else{
+			this.el.style.setProperty('visibility','hidden');
+		}
+	}
+}
+
+bindings.bindings['enabled'] = {
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.el.removeAttribute('disabled');
+		}
+		else{
+			this.el.setAttribute('disabled','disabled');
+		}
+	}
+}
+
+bindings.bindings['disabled'] = {
+	update: function(){
+		this.src.update();
+		if(this.src.value){
+			this.el.setAttribute('disabled','disabled');
+		}
+		else{
+			this.el.removeAttribute('disabled');
+		}
+	}
+}
+
+bindings.bindings['if'] = {
+	children: [],
+	restoreChildren: function(){
+		if(!this.children.length){
+			for (var i = 0; i < this.children.length; i++) {
+				 this.el.appendChild(this.children[i]);
+			};
+		}
+	},
+	removeChildren: function(){
+		if(this.children.length){
+			while (this.el.children.length !== 0) {
+			    this.el.removeChild(this.el.children[0]);
+			}
+		}
+	},
+	bind: function(){
+		for (var i = 0; i < this.el.children.length; i++) {
+			this.children.push(this.el.children[i]);
+		};
+	},
+	update: function(){
+		this.src.update();
+		if(!!this.src.value){
+			this.restoreChildren();
+		}
+		else{
+			this.removeChildren();
+		}
+	}
+}
+
+bindings.bindings['ifnot'] = {
+	children: [],
+	restoreChildren: function(){
+		if(!this.children.length){
+			for (var i = 0; i < this.children.length; i++) {
+				 this.el.appendChild(this.children[i]);
+			};
+		}
+	},
+	removeChildren: function(){
+		if(this.children.length){
+			while (this.el.children.length !== 0) {
+			    this.el.removeChild(this.el.children[0]);
+			}
+		}
+	},
+	bind: function(){
+		for (var i = 0; i < this.el.children.length; i++) {
+			this.children.push(this.el.children[i]);
+		};
+	},
+	update: function(){
+		this.src.update();
+		if(!this.src.value){
+			this.restoreChildren();
+		}
+		else{
+			this.removeChildren();
+		}
+	}
+}
+
+// bindings.bindings['attr'] = { NOTE: have to have muti bindings first
+// 	update: function(){
+// 		this.src.update();
+// 		var attrs = this.src.value;
+
+// 		if(typeof attrs != 'object') throw new Error('bind-attr requires a object');
+
+// 		for (var i in attrs) {
+// 			this.el.setAttribute(i,attrs[i]);
+// 		};
+// 	}
+// }
 
 bindings.bindings['click'] = {
 	_event: undefined,
@@ -657,6 +957,19 @@ bindings.bindings['click'] = {
 	}
 }
 
+bindings.bindings['dblclick'] = {
+	_event: undefined,
+	bind: function(){
+		this._event = function(){
+			this.src.update();
+		}.bind(this)
+
+		this.el.addEventListener('dblclick',this._event);
+	},
+	unbind: function(){
+		this.el.removeEventListener('dblclick',this._event);
+	}
+}
 bindings.bindings['submit'] = {
 	_event: undefined,
 	bind: function(){
@@ -714,9 +1027,11 @@ bindings.bindings['live-update'] = {
 		}
 	},
 	bind: function(){
+		this.el.addEventListener('keypress',this.event.bind(this))
 		this.el.addEventListener('keyup',this.event.bind(this))
 	},
 	unbind: function(){
+		this.el.removeEventListener('keypress',this.event.bind(this))
 		this.el.removeEventListener('keyup',this.event.bind(this))
 	}
 }
@@ -809,6 +1124,3 @@ bindings.bindings['repeat'] = {
 }
 	
 })(bindings)
-
-ctx.bindings = bindings;
-})(this);
