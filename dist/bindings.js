@@ -53,6 +53,34 @@ bindings = {
 		}
 	},
 
+	_applyBindings: function(el,scope){
+		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
+		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
+		var _bindings = [];
+
+		//remove old bindings
+		if(el.__bindings__){
+			for (var i = el.__bindings__.length - 1; i >= 0; i--) {
+				el.__bindings__[i]._unbind();
+			};
+			el.__bindings__ = [];
+		}
+		var data = bindings._parseBindings(el,scope);
+		el.__bindings__ = data;
+
+		_bindings = _bindings.concat(el.__bindings__);
+
+		//loop through and bind children
+		if(el.children){
+			for (var i = 0; i < el.children.length; i++) {
+				el.children[i].__scope__ = el.children[i].__scope__ || scope;
+				bindings._applyBindings(el.children[i],el.children[i].__scope__);
+				_bindings = _bindings.concat(el.children[i].__bindings__);
+			};
+		}
+
+		return _bindings;
+	},
 	_parseBindings: function(el,scope){ //parses bindings for a specific element 
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
 		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
@@ -71,6 +99,32 @@ bindings = {
 			}
 		};
 		return _bindings;
+	},
+	_modalChange: function(scope,data){ //handles events from the modal object changing
+		for (var i = 0; i < data.length; i++) {
+			if(data[i].name == '_binding') continue;
+
+			switch(data[i].type){
+				case 'add':
+					scope.setKey(data[i].name,data[i].object[data[i].name],true);
+					break;
+				case 'update':
+					scope.setKey(data[i].name,data[i].object[data[i].name],true);
+					break;
+				case 'delete':
+					scope.removeKey(data[i].name,true);
+					break;
+			}
+		};
+		scope.update();
+	},
+	_nodeChange: function(event){ //handles events for dom changes
+		event.stopPropagation();
+
+		var scope = event.target.__scope__ || event.relatedNode.__scope__;
+		if(scope){
+			bindings._applyBindings(event.target,scope);
+		}
 	},
 	_eval: function(string,scope){
 		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
@@ -126,7 +180,14 @@ bindings = {
 					data.requires.push(this.values[i]);
 					data.gets.push(this.values[i]);
 
-					if(typeof this.values[i].value !== 'function') return this.values[i].value;
+					if(typeof this.values[i].value !== 'function'){
+						if(this.values[i] instanceof bindings.Scope){
+							return buildContextFromScope(this.values[i]);;
+						}
+						else{
+							return this.values[i].value;
+						}
+					}
 				}.bind(s,o,i,data))
 
 				o.__defineSetter__(i,function(o,i,data,val){
@@ -181,6 +242,16 @@ bindings = {
 
 		return data;
 	},
+	_evalOnScope: function(){ //just like _eval but returns a scope or value, best used with simple expresion like { this.someValue }, this works { this.someValue + 'string' } but is not recomended as it will return only the first value that is gotten
+		var data = {
+			value: undefined,
+			success: false
+		}
+		var _data = bindings._evalRequires.apply(this,arguments);
+		data.value = _data.gets[_data.gets.length-1];
+		data.success = !!data.value;
+		return data;
+	},
 	noop: function(){}
 }
 
@@ -208,7 +279,13 @@ bindings.Modal.prototype = {
 		if(el) this.options.element = el;
 
 		this.removeAllBindings();
-		this.bindings = this.scope.applyBindings(this.options.element);
+		this.bindings = bindings._applyBindings(this.options.element,this.scope);
+
+		this.options.element.removeEventListener('DOMNodeInserted',bindings._nodeChange);
+		this.options.element.addEventListener('DOMNodeInserted',bindings._nodeChange);
+
+		this.options.element.removeEventListener('DOMNodeRemoved',bindings._nodeChange);
+		this.options.element.addEventListener('DOMNodeRemoved',bindings._nodeChange);
 	},
 	getBinding: function(el){
 		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
@@ -251,26 +328,10 @@ bindings.Scope = function(key,data,parent){ //creates scope object from data
 	this.values = (data.hasOwnProperty('length'))? [] : {};
 	this.events = {};
 	this.parent = parent;
-	this.updateKeys(data);
+	this.setKeys(data);
 
 	//listen for events on object
-	Object.observe(this.value,function(data){
-		for (var i = 0; i < data.length; i++) {
-			if(data[i].name == '_binding') continue;
-
-			switch(data[i].type){
-				case 'add':
-					this.addKey(data[i].name,data[i].object[data[i].name]);
-					break;
-				case 'update':
-					this.updateKey(data[i].name,data[i].object[data[i].name]);
-					break;
-				case 'delete':
-					this.removeKey(data[i].name);
-					break;
-			}
-		};
-	}.bind(this))
+	Object.observe(this.value,bindings._modalChange.bind(this,this))
 
 	return this;
 };
@@ -279,35 +340,6 @@ bindings.Scope.prototype = {
 	object: undefined,
 	parent: undefined,
 	values: undefined,
-	addKey: function(key,value){
-		if(typeof value == 'object'){
-			this.values[key] = new bindings.Scope(key,value,this);
-		}
-		else{
-			this.values[key] = new bindings.Value(key,value,this);
-		}
-		this.emit('change',this)
-	},
-	removeKey: function(key){
-		delete this.values[key];
-		this.emit('change',this)
-	},
-	updateKey: function(key,value){
-		if(!this.values[key]) this.addKey(key,value);
-		if(this.values[key] instanceof bindings.Value){
-			this.values[key].setValue(value);
-		}
-		else if(this.values[key] instanceof bindings.Scope){
-			this.values[key].updateKeys(value);
-		}
-		this.emit('change',this)
-	},
-	updateKeys: function(keys){
-		keys = keys || {};
-		for (var i in keys) {
-			this.updateKey(i,keys[i]);
-		};
-	},
 	getKey: function(value){ //finds a key based on a value
 		for (var i in this.values) {
 			if(this.values[i].value == value){
@@ -315,11 +347,46 @@ bindings.Scope.prototype = {
 			}
 		};
 	},
+	setKey: function(key,value,dontFire){
+		if(this.values[key] == undefined){
+			//add it
+			if(typeof value == 'object'){
+				this.values[key] = new bindings.Scope(key,value,this);
+			}
+			else{
+				this.values[key] = new bindings.Value(key,value,this);
+			}
+		}
+
+		if(this.values[key] instanceof bindings.Value){
+			this.values[key].setValue(value);
+		}
+		else if(this.values[key] instanceof bindings.Scope){
+			this.values[key].setKeys(value);
+		}
+		if(!dontFire) this.emit('change',this);
+	},
+	setKeys: function(keys,dontFire){
+		keys = keys || {};
+		for (var i in keys) {
+			this.setKey(i,keys[i],true);
+		};
+		if(!dontFire) this.emit('change',this);
+	},
+	removeKey: function(key,dontFire){
+		delete this.values[key];
+		if(!dontFire) this.emit('change',this);
+	},
+	updateKey: function(key,value){ //update key on modal object
+		this.value[key] = value;
+	},
+	updateKeys: function(keys){ //update key on modal object
+		for(var i in keys){
+			this.updateKey(i,keys[i]);
+		}
+	},
 	getValue: function(key){
 		return this.values[key];
-	},
-	getValueFromValue: function(val){
-		return this.getValue(this.getKey(val));
 	},
 	update: function(){
 		this.emit('change',this)
@@ -351,30 +418,6 @@ bindings.Scope.prototype = {
 	 			};
 	 			break;
 	 	}
-	},
-	applyBindings: function(el){
-		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-
-		var _bindings = [];
-
-		//remove old bindings
-		if(el.__bindings__){
-			for (var i = el.__bindings__.length - 1; i >= 0; i--) {
-				el.__bindings__[i]._unbind();
-			};
-		}
-		for (var i = 0; i < el.children.length; i++) {
-			var data = bindings._parseBindings(el.children[i],this);
-
-			_bindings = _bindings.concat(data);
-
-			//children
-			if(el.children[i].children){
-				el.children[i].__scope__ = el.children[i].__scope__ || this;
-				_bindings = _bindings.concat(el.__bindings__ = el.children[i].__scope__.applyBindings(el.children[i]));
-			}
-		};
-		return _bindings;
 	}
 }
 bindings.Scope.prototype.constructor = bindings.Scope;
@@ -389,6 +432,7 @@ bindings.Value = function(key,val,parent){
 	return this;
 };
 bindings.Value.prototype = {
+	key: '',
 	value: undefined,
 	parent: undefined,
 	events: {},
@@ -425,8 +469,12 @@ bindings.Value.prototype = {
 	 	}
 	},
 	setValue: function(val){
-		this.value = val || this.value;
+		this.value = (val !== undefined)? val : this.value;
 		this.emit('change',val);
+	},
+	updateValue: function(val){ //changes value on the modal object
+		//just set the value, dont bother about the change event or sett my value, the scope will handle that
+		this.parent.updateKey(this.key,val);
 	},
 	update: function(){
 		this.emit('change',this.value);
@@ -535,12 +583,13 @@ bindings.Src = function(srcString,scope){
 bindings.Src.prototype = {
 	value: undefined,
 	success: true,
-	sting: '',
+	string: '',
 	scope: undefined,
 	requires: undefined,
+	eval: bindings._eval,
 	update: function(){
 		//run string
-		var e = bindings._eval(this.string,this.scope);
+		var e = this.eval(this.string,this.scope);
 		this.value = e.value;
 		this.success = e.success;
 
@@ -552,6 +601,27 @@ bindings.Src.prototype = {
 		}
 
 		return this.requires;
+	},
+	setEval: function(evalFunction){ //eval has to return a object containing two values, success and value
+		//test function
+		try{
+			var data = evalFunction('this',this.scope);
+
+			if(data !== undefined){
+				if(!data.hasOwnProperty('value') && !data.hasOwnProperty('success')){
+					throw new Error('function dose not return a object or returned object is missing values');
+				}
+			}
+			else{
+				throw new Error('function dose not return a object');
+			}
+
+			this.eval = evalFunction
+		}
+		catch(e){
+			console.error('invalid eval function');
+			console.error(e);
+		}
 	}
 }
 bindings.Src.prototype.constructor = bindings.Src;
@@ -574,25 +644,77 @@ bindings.bindings['text'] = {
 }
 
 bindings.bindings['click'] = {
+	_event: undefined,
 	bind: function(){
-		this.event = this.event || function(){
+		this._event = function(){
 			this.src.update();
 		}.bind(this)
+
+		this.el.addEventListener('click',this._event);
+	},
+	unbind: function(){
+		this.el.removeEventListener('click',this._event);
+	}
+}
+
+bindings.bindings['submit'] = {
+	_event: undefined,
+	bind: function(){
+		this._event = this.submit.bind(this)
+
+		this.el.addEventListener('submit',this._event);
+	},
+	submit: function(event){
+		event.preventDefault();
+		this.src.update();
+	},
+	unbind: function(){
+		this.el.removeEventListener('submit',this._event);
+	}
+}
+
+bindings.bindings['value'] = {
+	_event: undefined,
+	_dontUpdate: false,
+	bind: function(){
+		this._event = this.change.bind(this);
+
+		this.el.addEventListener('change',this._event);
+
+		this.src.setEval(bindings._evalOnScope);
+	},
+	change: function(){ //event from el
+		this.src.update();
+
+		if(!(this.src.value instanceof bindings.Value)) throw new Error('bind-value requires a instance of bindings.Value');
+
+		this._dontUpdate = true;
+		this.src.value.updateValue(this.el.value);
 	},
 	update: function(){
-		this.el.removeEventListener('click',this.event);
-		this.el.addEventListener('click',this.event);
+		if(!this._dontUpdate){
+			this.src.update();
+			this.el.value = this.src.value.value;
+		}
+		else{
+			this._dontUpdate = false;
+		}
+	},
+	unbind: function(){
+		this.el.removeEventListener('change',this._event);
 	}
 }
 
 bindings.bindings['with'] = {
+	bind: function(){
+		this.src.setEval(bindings._evalOnScope);
+	},
 	update: function(){
 		this.src.update();
-		var val = this.scope.getValueFromValue(this.src.value); //dose not matter if this is a number or string because it will be stoped on the next line
-		if(!(val instanceof bindings.Scope)) throw new Error('with requires a Object or Array')
+		if(!(this.src.value instanceof bindings.Scope)) throw new Error('with requires a Object or Array')
 
 		for (var i = 0; i < this.el.children.length; i++) {
-			this.el.children[i].__scope__ = val;
+			this.el.children[i].__scope__ = this.src.value;
 		};
 	}
 }
@@ -605,6 +727,8 @@ bindings.bindings['foreach'] = {
 		}
 	},
 	bind: function(){
+		this.src.setEval(bindings._evalOnScope);
+
 		var a = [];
 		for (var i = 0; i < this.el.children.length; i++) {
 			a.push(this.el.children[i]);
@@ -614,18 +738,16 @@ bindings.bindings['foreach'] = {
 	update: function(){
 		this.removeAllChildren();
 		this.src.update();
-		var val = this.scope.getValueFromValue(this.src.value);
-		if(!(val instanceof bindings.Scope)) throw new Error('foreach requires a Object or Array')
 
-		for (var i in val.values) {
+		if(!(this.src.value instanceof bindings.Scope)) throw new Error('foreach requires a Object or Array')
+
+		for (var i in this.src.value.values) {
 			for (var k = 0; k < this.__foreach_children__.length; k++) {
 				var el = this.__foreach_children__[k].cloneNode(true);
-				el.__scope__ = val.values[i];
+				el.__scope__ = this.src.value.values[i];
 				this.el.appendChild(el)
 			};
 		};
-
-		this.scope.applyBindings(this.el);
 	},
 	unbind: function(){
 		this.removeAllChildren();
@@ -660,8 +782,6 @@ bindings.bindings['repeat'] = {
 				this.el.appendChild(el)
 			};
 		};
-
-		this.scope.applyBindings(this.el);
 	},
 	unbind: function(){
 		this.removeAllChildren();

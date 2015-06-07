@@ -1,4 +1,2 @@
-- test _evalRequires with functions
 - test _eval with values as context
-- allow events to go up/down scopes
 - allow _eval & _evalRequires to access var on scope like (value)=(this.value)

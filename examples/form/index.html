@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title bind-text="'Bindings - '+this.title"></title>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
+
+		<!-- binding lib -->
+		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
+		<script type="text/javascript" src="../../src/bindings.js"></script>
+		<script type="text/javascript" src="../../src/bindings-types.js"></script>
+	</head>
+	<body>
+		<a href="../">< back</a>
+
+		<h1>Login form <small>(<i>bind-submit</i> & <i>bind-value</i>)</small></h1>
+		<form bind-submit="this.done()">
+			<label>Email</label>
+			<input type="text" bind-value="this.email">
+			<br>
+			<label>Password</label>
+			<input type="text" bind-value="this.password">
+			<br>
+			<button type="submit">Login</button>
+		</form>
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'Form',
+				email: '',
+				password: '',
+				done: function(){
+					alert('login details \n'+'email: '+this.email + '\n' + 'password: '+this.password)
+				}
+			}
+
+			bindings.createModal(myModal);
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>

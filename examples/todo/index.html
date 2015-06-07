@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title bind-text="'Bindings - '+this.title"></title>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
+
+		<!-- binding lib -->
+		<!-- <script type="text/javascript" src="../../dist/bindings.min.js"></script> -->
+		<script type="text/javascript" src="../../src/bindings.js"></script>
+		<script type="text/javascript" src="../../src/bindings-types.js"></script>
+	</head>
+	<body>
+		<a href="../">< back</a>
+
+		<h1>Todo list</h1>
+		<ul bind-foreach="this.items">
+			<li><span bind-text="this.title"></span></li>
+		</ul>
+		<form bind-submit="this.addItem(), this.item.title = ''">
+			<input type="text" placeHolder="something todo..." bind-value="this.item.title">
+			<button type="submit">Add</button>
+		</form>
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'Todo list',
+				items: [],
+				item: {
+					title: '',
+					done: false
+				},
+				addItem: function(){
+					this.items.push({
+						title: this.item.title,
+						done: this.item.done
+					})
+				}
+			}
+
+			bindings.createModal(myModal);
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>
