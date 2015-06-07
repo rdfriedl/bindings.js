@@ -70,6 +70,22 @@ bindings.bindings['value'] = {
 	}
 }
 
+bindings.bindings['live-update'] = {
+	event: function(){
+		if ("createEvent" in document) {
+		    var evt = document.createEvent("HTMLEvents");
+		    evt.initEvent("change", false, true);
+		    this.el.dispatchEvent(evt);
+		}
+	},
+	bind: function(){
+		this.el.addEventListener('keyup',this.event.bind(this))
+	},
+	unbind: function(){
+		this.el.removeEventListener('keyup',this.event.bind(this))
+	}
+}
+
 bindings.bindings['with'] = {
 	bind: function(){
 		this.src.setEval(bindings._evalOnScope);
