@@ -7,7 +7,7 @@
 		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
 
 		<!-- binding lib -->
-		<script type="text/javascript" src="../../dist/build.php"></script>
+		<script type="text/javascript" src="../../dist/bindings.js"></script>
 	</head>
 	<body>
 		<a href="../">< back</a>
@@ -20,7 +20,7 @@
 			<label>Password</label>
 			<input type="text" bind-value="password" bind-live-update><small bind-text="password"></small>
 			<br>
-			<button type="submit" bind-enabled="email.length & password.length">Login</button>
+			<button type="submit" bind-enabled="email.length > 0 && password.length > 0">Login</button>
 		</form>
 
 		<script type="text/javascript">

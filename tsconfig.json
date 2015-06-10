@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "out": "dist/bindings.js",
+        "target": "es5",
+        "sourceMap": true
+    },
+    "files": [
+        "src/bindings.ts"
+    ]
+}

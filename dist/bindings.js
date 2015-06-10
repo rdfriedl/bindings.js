@@ -1,1142 +1,1037 @@
-(function(){
-/**
- * the main NameSpace for bindings.js
- *
- * @namespace bindings
- */
-bindings = {
-	bindings: {},
-
-	/**
-	 * Creates a new {@link bindings.Modal} based on an Object
-	 *
-	 * @param {Object} Object - The Object that the {@link bindings.Modal} will use.
-	 * @param {Object} Options - An Object that contains options.
-	 */
-	createModal: function(object,options){
-		var modal = new this.Modal(object,options);
-		object._binding = modal;
-
-		return object;
-	},
-
-	/**
-	 * Binds a {@link bindings.Modal} to a dom element.
-	 * 
-	 * @param {bindings.Modal} Modal - The Modal to bind.
-	 * @param {Node} Element - The Element to bind to.
-	 */
-	applyBindings: function(modal,el){
-		modal = modal || {};
-		if(modal instanceof this.Modal){
-			modal.applyBindings(el)
-		}
-		else if(modal._binding instanceof this.Modal){
-			modal._binding.applyBindings(el)
-		}
-	},
-
-	_applyBindings: function(el,scope){
-		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
-		var _bindings = [];
-
-		//remove old bindings
-		if(el.__bindings__){
-			for (var i = el.__bindings__.length - 1; i >= 0; i--) {
-				el.__bindings__[i]._unbind();
-			};
-			el.__bindings__ = [];
-		}
-		var data = bindings._parseBindings(el,scope);
-		el.__bindings__ = data;
-
-		_bindings = _bindings.concat(el.__bindings__);
-
-		//loop through and bind children
-		if(el.children){
-			for (var i = 0; i < el.children.length; i++) {
-				el.children[i].__scope__ = el.children[i].__scope__ || scope;
-				bindings._applyBindings(el.children[i],el.children[i].__scope__);
-				_bindings = _bindings.concat(el.children[i].__bindings__);
-			};
-		}
-
-		return _bindings;
-	},
-	_parseBindings: function(el,scope){ //parses bindings for a specific element 
-		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
-
-		var _bindings = [];
-		var attrs = el.attributes || [];
-		for (var i = 0; i < attrs.length; i++) {
-			var attr = attrs.item(i);
-			var id = attr.name;
-			//find the binding attrs and extract the src
-			if(id.search('bind-') !== -1){
-				id = id.substr(id.indexOf('-')+1,id.length);
-				var src = attr.value;
-				var binding = new bindings.Binding(el,src,scope,id);
-				_bindings.push(binding);
-			}
-		};
-		return _bindings;
-	},
-	_modalChange: function(scope,data){ //handles events from the modal object changing
-		for (var i = 0; i < data.length; i++) {
-			if(data[i].name == '_binding') continue;
-
-			switch(data[i].type){
-				case 'add':
-					scope.setKey(data[i].name,data[i].object[data[i].name],true);
-					break;
-				case 'update':
-					scope.setKey(data[i].name,data[i].object[data[i].name],true);
-					break;
-				case 'delete':
-					scope.removeKey(data[i].name,true);
-					break;
-			}
-		};
-		scope.update();
-	},
-	_nodeChange: function(event){ //handles events for dom changes
-		event.stopPropagation();
-
-		var scope = event.target.__scope__ || event.relatedNode.__scope__;
-		if(scope){
-			bindings._applyBindings(event.target,scope);
-		}
-	},
-	_eval: function(string,scope){
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
-
-		string = string || '';
-		var data = {
-			value: undefined,
-			success: true,
-		}
-		var addedScope = {
-			$modal: (scope.modal)? scope.modal.scope.value : undefined,
-			$parent: (scope.parent)? scope.parent.value : undefined
-		};
-
-		var func = 'new Function("addedScope","', args = [];
-		var context = scope.value;
-		args.push(addedScope);
-
-		func += 'with(this){';
-		func += 'with(addedScope){';
-		func += 'return ';
-		func += string;
-		func += '}';
-		func += '}';
-		func += '")';
-		func = eval(func);
-
-		try{
-			data.value = func.apply(context,args);
-		}
-		catch(e){
-			data.success = false;
-		}
-
-		return data;
-	},
-	_evalRequires: function(string,scope){ //only binds to values/scopes on the first level
-		if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
-
-		string = string || '';
-		var data = {
-			success: true,
-			requires: [], //all values in this src
-			sets: [], //array of values set
-			gets: [] //array of values got
-		}
-		var scopeVars = {
-			console: {},
-			window: {},
-			navigator:{},
-			localStorage: {},
-			location: {},
-			alert: bindings.noop,
-			eval: bindings.noop
-		}
-
-		//compile scope
-		var buildContextFromScope = function(s){
-			var o = new s.values.__proto__.constructor;
-			for (var i in s.values) {
-				o.__defineGetter__(i,function(o,i,data){
-					data.requires.push(this.values[i]);
-					data.gets.push(this.values[i]);
-
-					if(typeof this.values[i].value !== 'function'){
-						if(this.values[i] instanceof bindings.Scope){
-							return buildContextFromScope(this.values[i]);;
-						}
-						else{
-							return this.values[i].value;
-						}
-					}
-				}.bind(s,o,i,data))
-
-				o.__defineSetter__(i,function(o,i,data,val){
-					data.requires.push(this.values[i]);
-					data.sets.push(this.values[i]);
-					
-					// this.values[i].setValue(val);
-					// o[i] = val;
-				}.bind(s,o,i,data))
-			};
-			return o;
-		}
-
-		var addedScope = {
-			$modal: (scope.modal)? buildContextFromScope(scope.modal.scope) : undefined,
-			$parent: (scope.parent)? buildContextFromScope(scope.parent) : undefined
-		};
-
-		var func = 'new Function("addedScope",', args = [];
-		var context = {};
-		args.push(addedScope);
-
-		//add scopeVars
-		for (var i in scopeVars) {
-			func += '"' + i + '",';
-			args.push(scopeVars[i])
-		};
-		if(scope instanceof bindings.Scope){
-			context = buildContextFromScope(scope);
-
-			//reset gets & sets
-			data.gets = [];
-			data.sets = [];
-			data.requires = [];
-		}
-		else if(scope instanceof bindings.Value){ //NOTE going to have to test/fix this for using values as a ctx for eval
-			context = scope.value;
-		}
-
-		func += '"';
-		func += 'with(this){';
-		func += 'with(addedScope){';
-		func += 'return ';
-		func += string;
-		func += '}';
-		func += '}';
-		func += '")';
-		func = eval(func);
-
-		try{
-			func.apply(context,args);
-		}
-		catch(e){
-			data.success = false;
-		}
-
-		//remove duplicates
-		var d = [];
-		for (var i = 0; i < data.requires.length; i++) {
-			if(d.indexOf(data.requires[i]) == -1) d.push(data.requires[i]);
-		};
-		data.requires = d;
-
-		return data;
-	},
-	_evalOnScope: function(){ //just like _eval but returns a scope or value, best used with simple expresion like { this.someValue }, this works { this.someValue + 'string' } but is not recomended as it will return only the first value that is gotten
-		var data = {
-			value: undefined,
-			success: false
-		}
-		var _data = bindings._evalRequires.apply(this,arguments);
-		data.value = _data.gets[_data.gets.length-1];
-		data.success = !!data.value;
-		return data;
-	},
-	_duplicateObject: function(obj2,count){
-		if(typeof obj2 == 'object' && obj2 !== null){
-			count = (count !== undefined)? count : 20;
-			if(count > 0){
-				// see if its an array
-				if(obj2.hasOwnProperty('length')){
-					var obj = []
-					for (var i = 0; i < obj2.length; i++) {
-						if(typeof obj2[i] !== 'object'){
-							obj[i] = obj2[i]
-						}
-						else{
-							obj[i] = bindings._duplicateObject(obj2[i],count-1)
-						}
-					};
-				}
-				else{
-					var obj = {}
-					for (var i in obj2){
-						if(typeof obj2[i] !== 'object'){
-							obj[i] = obj2[i]
-						}
-						else{
-							obj[i] = bindings._duplicateObject(obj2[i],count-1)
-						}
-					}
-				}
-			}
-			return obj;
-		}
-		else{
-			return obj2
-		}
-	},
-	noop: function(){}
-}
-
-//fix for IE
-if(!document.children){
-	document.__defineGetter__('children',function(){
-		return this.body.children;
-	})
-}
-/**
- * Modal class
- *
- * @class
- * @param {Object} Object - The object that this modal will use.
- * @param {Object} Options - A object that contains options.
- */
-bindings.Modal = function(object,options){
-	this.options = Object.create(this.options);
-	this.scope = new bindings.Scope('',object,this);
-
-	options = options || {};
-	for(var i in options){
-		this.options[i] = options[i];
-	}
-
-	return this;
+/// <reference path="bindings.ts" />
+var EventEmiter = (function () {
+    function EventEmiter() {
+        this.events = {};
+    }
+    EventEmiter.prototype.on = function (event, fn, ctx) {
+        if (ctx === void 0) { ctx = undefined; }
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        if (ctx)
+            fn = fn.bind(ctx);
+        this.events[event].push(fn);
+    };
+    EventEmiter.prototype.off = function (event, fn) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        if (this.events[event].indexOf(fn) !== -1) {
+            this.events[event].splice(this.events[event].indexOf(fn), 1);
+        }
+    };
+    EventEmiter.prototype.once = function (event, fn, ctx) {
+        if (ctx === void 0) { ctx = undefined; }
+        this.on(event, function (event, _this) {
+            if (fn)
+                fn();
+            this.off(event, _this);
+        }.bind(this), ctx);
+    };
+    EventEmiter.prototype.emit = function (event, data) {
+        if (data === void 0) { data = undefined; }
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        for (var i = 0; i < this.events[event].length; i++) {
+            this.events[event][i](data);
+        }
+        ;
+    };
+    return EventEmiter;
+})();
+/// <reference path="bindings.ts" />
+var bindings;
+(function (bindings) {
+    var Modal = (function () {
+        function Modal(object, element) {
+            this.object = object;
+            this.element = element;
+            this.bindings = [];
+            this.scope = new bindings.Scope('', object, this);
+        }
+        Modal.prototype.applyBindings = function (element) {
+            if (element === void 0) { element = undefined; }
+            //remove old event
+            this.element.removeEventListener('DOMNodeInserted', this.ElementChange.bind(this));
+            this.element.removeEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
+            if (element)
+                this.element = element;
+            this.bindings = this.buildBindings();
+            this.element.addEventListener('DOMNodeInserted', this.ElementChange.bind(this));
+            this.element.addEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
+        };
+        Modal.prototype.buildBindings = function (element, scope) {
+            if (element === void 0) { element = this.element; }
+            if (scope === void 0) { scope = element.__scope__ || this.scope; }
+            var bindingsCreated = [];
+            //remove old bindings
+            if (element.__bindings__) {
+                for (var i = 0; i < element.__bindings__.length; i++) {
+                    element.__bindings__[i].unbind();
+                }
+                ;
+                element.__bindings__ = [];
+            }
+            element.__scope__ = scope;
+            var data = this.parseBindings(element);
+            element.__bindings__ = data;
+            bindingsCreated = bindingsCreated.concat(element.__bindings__);
+            //loop through and bind children
+            if (element.children) {
+                for (var i = 0; i < element.children.length; i++) {
+                    var child = element.children[i];
+                    child.__scope__ = child.__scope__ || scope;
+                    this.buildBindings(child, child.__scope__);
+                    bindingsCreated = bindingsCreated.concat(child.__bindings__);
+                }
+                ;
+            }
+            return bindingsCreated;
+        };
+        Modal.prototype.parseBindings = function (element) {
+            var bindingsCreated = [];
+            var attrs = element.attributes;
+            for (var i = 0; i < attrs.length; i++) {
+                var attr = attrs.item(i);
+                var type = attr.name;
+                //find the binding attrs and extract the src
+                if (type.search('bind-') == 0) {
+                    type = type.substr(type.indexOf('-') + 1, type.length);
+                    var binding = bindingTypes.createBinding(type, element, attr);
+                    if (binding) {
+                        bindingsCreated.push(binding);
+                    }
+                    else {
+                        console.error('cant find binding: ' + type);
+                    }
+                }
+            }
+            ;
+            return bindingsCreated;
+        };
+        Modal.prototype.ElementChange = function (event) {
+            event.stopPropagation();
+            var el = event.target;
+            if (el.nodeType !== 3) {
+                this.buildBindings(el);
+            }
+        };
+        return Modal;
+    })();
+    bindings.Modal = Modal;
+})(bindings || (bindings = {}));
+/// <reference path="bindings.ts" />
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
 };
-bindings.Modal.prototype = {
-	/**
-	 * @property {Array} Bindings - An Array of {@link bindings.Binding} made with this Modals {@link bindings.Modal#scope|Scope} and its dom element its bound to
-	 *
-	 */
-	bindings: [], //an array of bindings with dom elements
-	options: {
-		element: document
-	},
-
-	/**
-	 * @property {bindings.Scope} scope - The Root {@link bindings.Scope|Scope} for this Modal
-	 */
-	scope: undefined,
-
-	/**
-	 * Binds this Modals {@link bindings.Modal#scope|Scope} to a dom element
-	 *
-	 * @param {Node} Element - The element to bind to.
-	 */
-	applyBindings: function(el){
-		if(!(el instanceof Node) && el) throw new Error('first argument has to be a Node');
-
-		if(el) this.options.element = el;
-
-		this.removeAllBindings();
-		this.bindings = bindings._applyBindings(this.options.element,this.scope);
-
-		this.options.element.removeEventListener('DOMNodeInserted',bindings._nodeChange);
-		this.options.element.addEventListener('DOMNodeInserted',bindings._nodeChange);
-
-		this.options.element.removeEventListener('DOMNodeRemoved',bindings._nodeChange);
-		this.options.element.addEventListener('DOMNodeRemoved',bindings._nodeChange);
-	},
-	getBinding: function(el){
-		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-
-		for (var i = 0; i < this.bindings.length; i++) {
-			if(this.bindings[i].el === el){
-				return this.bindings[i];
-			}
-		};
-	},
-	removeBinding: function(el){
-		if(!(el instanceof Node)) throw new Error('first argument has to be a Node');
-
-		var binding = this.getBinding(el);
-		if(binding){
-			binding._unbind();
-
-			for (var i = 0; i < this.bindings.length; i++) {
-				if(this.bindings[i].el === el){
-					delete this.bindings[i];
-					return;
-				}
-			};
-		}
-	},
-	removeAllBindings: function(){
-		for (var i = 0; i < this.bindings.length; i++) {
-			this.bindings[i]._unbind();
-		};
-		this.bindings = [];
-	}
-}
-bindings.Modal.prototype.constructor = bindings.Modal;
-/**
- * Reprsents a Object or Array on the a {@link bindings.Modal} or {@link bindings.Scope}
- *
- * @class
- * @param {String} Key - the key of this Scope in its parent.
- * @param {Object} Object - the Object this scope will handle.
- * @param {bindings.Modal} Modal - The Modal this scope belongs to
- * @param {bindings.Scope} [Parent] - The parnet Scope for this Scope
- */
-bindings.Scope = function(key,data,modal,parent){ //creates scope object from data
-	data = data || {};
-	this.key = key || '';
-	this.value = data;
-	this.values = (data.hasOwnProperty('length'))? [] : {};
-	this.events = {};
-	this.parent = parent;
-	this.modal = modal;
-	this.setKeys(data);
-
-	//listen for events on object
-	Object.observe(this.value,bindings._modalChange.bind(this,this))
-
-	return this;
-};
-bindings.Scope.prototype = {
-	events: {},
-	object: undefined,
-	parent: undefined,
-	modal: undefined,
-	values: undefined,
-	getKey: function(value){ //finds a key based on a value
-		for (var i in this.values) {
-			if(this.values[i].value == value){
-				return i;
-			}
-		};
-	},
-
-	/**
-	 * Sets a key in this Scope
-	 *
-	 * @param {String} Key - The key to set.
-	 * @param {*} Value
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	setKey: function(key,value,dontFire){
-		if(this.values[key] == undefined){
-			//add it
-			if(typeof value == 'object'){
-				this.values[key] = new bindings.Scope(key,value,this.modal,this);
-			}
-			else{
-				this.values[key] = new bindings.Value(key,value,this);
-			}
-		}
-
-		if(this.values[key] instanceof bindings.Value){
-			this.values[key].setValue(value);
-		}
-		else if(this.values[key] instanceof bindings.Scope){
-			this.values[key].setKeys(value);
-		}
-		if(!dontFire) this.emit('change',this);
-	},
-
-	/**
-	 * Sets mutiple keys in the Scope
-	 *
-	 * @param {Object} Keys - An Object consisting of key - value pares.
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	setKeys: function(keys,dontFire){
-		keys = keys || {};
-		for (var i in keys) {
-			this.setKey(i,keys[i],true);
-		};
-		if(!dontFire) this.emit('change',this);
-	},
-
-	/**
-	 * Removes a Key from this Scope
-	 *
-	 * @param {String} Key
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	removeKey: function(key,dontFire){
-		delete this.values[key];
-		if(!dontFire) this.emit('change',this);
-	},
-	updateKey: function(key,value){ //update key on modal object
-		this.value[key] = value;
-	},
-	updateKeys: function(keys){ //update key on modal object
-		for(var i in keys){
-			this.updateKey(i,keys[i]);
-		}
-	},
-
-	/**
-	 * Fires the change event
-	 */
-	update: function(){
-		this.emit('change',this)
-	},
-
-	/**
-	 * Listen for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
-	on: function(event,fn,ctx){
-		if(!this.events[event]) this.events[event] = [];
-		if(ctx) fn = fn.bind(ctx);
-		this.events[event].push(fn);
-	},
-
-	/**
-	 * Stop Listening for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
-	off: function(event,fn){
-		if(!this.events[event]) this.events[event] = [];
-		if(this.events[event].indexOf(fn) !== -1){
-			this.events[event].splice(this.events[event].indexOf(fn),1);
-		}
-	},
-
-	/**
-	 * Fires an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {*} Data - The data to be sent to the listeners
-	 */
-	emit: function(event,data,direction){
-		if(!this.events[event]) this.events[event] = [];
-		for (var i = 0; i < this.events[event].length; i++) {
-		 	this.events[event][i](data);
-	 	};
-	 	//send event in direction
-	 	switch(direction){
-	 		case 'up':
-	 			if(this.parent) this.parent.emit(event,undefined,direction);
-	 			break;
-	 		case 'down':
-	 			for (var i in this.values) {
-	 				this.values[i].emit(event,undefined,direction);
-	 			};
-	 			break;
-	 	}
-	}
-}
-bindings.Scope.prototype.constructor = bindings.Scope;
-/**
- * Reprsents a value in a {@link bindings.Scope}.
- *
- * @class
- * @param {String} Key - The key of this value in its parent scope.
- * @param {*} Value - The value to watch.
- * @param {bindings.Scope} Parent - The scope this value blongs to.
- */
-bindings.Value = function(key,val,parent){
-	this.key = key;
-	this.value = val;
-	this.events = {};
-	this.parent = parent;
-
-	return this;
-};
-bindings.Value.prototype = {
-	key: '',
-	value: undefined,
-	parent: undefined,
-	events: {},
-
-	/**
-	 * Listen for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
-	on: function(event,fn,ctx){
-		if(!this.events[event]){
-			this.events[event] = [];
-		}
-		if(ctx) fn = fn.bind(ctx);
-		this.events[event].push(fn);
-	},
-
-	/**
-	 * Stop Listening for an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {Function} Handler - The function that will be called when the event fires
-	 */
-	off: function(event,fn){
-		if(!this.events[event]){
-			this.events[event] = [];
-		}
-		if(this.events[event].indexOf(fn) !== -1){
-			this.events[event].splice(this.events[event].indexOf(fn),1);
-		}
-	},
-
-	/**
-	 * Fires an event
-	 *
-	 * @public
-	 * @param {String} Event
-	 * @param {*} Data - The data to be sent to the listeners
-	 */
-	emit: function(event,data,direction){
-		if(!this.events[event]){
-			this.events[event] = [];
-		}
-		for (var i = 0; i < this.events[event].length; i++) {
-		 	this.events[event][i](data);
-	 	};
-	 	//send event in direction
-	 	switch(direction){
-	 		case 'up':
-	 			if(this.parent) this.parent.emit(event,undefined,direction);
-	 			break;
-	 		case 'down':
-	 			//this is a value so we cant go any further down
-	 			break;
-	 	}
-	},
-
-	/**
-	 * Sets the value
-	 *
-	 * @param {*} Value
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	setValue: function(val,dontFire){
-		this.value = (val !== undefined)? val : this.value;
-		if(!dontFire) this.emit('change',val);
-	},
-
-	/**
-	 * Sets the value on the scopes object
-	 *
-	 * @private
-	 * @param {*} Value
-	 * @param {boolean} DontUpdate - Set to true to prevent from firing the change event.
-	 */
-	updateValue: function(val){
-		//just set the value, dont bother about the change event or sett my value, the scope will handle that
-		this.parent.updateKey(this.key,val);
-	},
-
-	/**
-	 * Fires the change event
-	 */
-	update: function(){
-		this.emit('change',this.value);
-	}
-}
-bindings.Value.prototype.constructor = bindings.Value;
-/**
- * Reprsents a binding between a dom element and a {@link bindings.Value|Value} or {@link bindings.Scope|Scope}.
- *
- * @class
- * @param {Node} Element - The element to bind to.
- * @param {String} String - The script to run.
- * @param {bindings.Scope} Scope - The scope this binding will be using.
- * @param {bindings.Type} Type - The type of binding this is.
- */
-bindings.Binding = function(el,srcString,scope,type){ //type is id in the bindings array
-	if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('third argument has to be a Scope or a Value');
-
-	this.el = el;
-	this.scope = scope;
-	this.src = new bindings.Script(srcString,this.scope);
-	this.type = type;
-
-	//apply type
-	var _type = bindings.bindings[type];
-	if(_type){
-		for (var i in _type) {
-			this[i] = _type[i];
-		};
-	}
-	else{
-		console.error('cant find binding type: '+type)
-	}
-
-	this._bind();
-	this._update();
-
-	return this;
-}
-bindings.Binding.prototype = {
-	el: undefined,
-	scope: undefined,
-	src: undefined, //src
-	events: [], //list of events and the object they are on
-	_bind: function(){
-		this._updateEvents();
-		this.bind();
-	},
-	_update: function(){
-		try{
-			this.update();
-		}
-		catch(e){
-			console.error('failed to bind: "'+this.src.string+'" on element');
-			console.error(this.el);
-			console.error(e);
-		}
-	},
-	_unbind: function(){
-		//unbind all events
-		this._unbindEvents();
-		this.unbind();
-	},
-	_unbindEvents: function(){
-		//unbind all events
-		for (var i = 0; i < this.events.length; i++) {
-			this.events[i].obj.off(this.events[i].type,this.events[i].func);
-		};
-		this.events = [];
-	},
-	_bindEvents: function(){
-		//bind events
-		var a = this.src.getRequires();
-		for (var i = 0; i < a.length; i++) {
-			this.events.push({
-				type: 'change',
-				func: this._update.bind(this),
-				obj: a[i]
-			})
-			a[i].on('change',this._update.bind(this));
-		};
-	},
-	_updateEvents: function(){
-		this._unbindEvents();
-		this._bindEvents();
-	},
-
-	//set these in the when defining bindings
-	bind: function(el){ //binds to dom events
-
-	},
-	unbind: function(el){ //unbinds from dom events
-
-	},
-	update: function(el,val){ //updates dom el, val is parsed from the src
-
-	},
-	getScope: function(){ //returns scope to use for children, or array of scopes for children
-
-	}
-}
-bindings.Binding.prototype.constructor = bindings.Binding;
-/**
- * Reprsents a srcipt on a dom element.
- *
- * @class
- * @param {String} Script - The Script as a String.
- * @param {bindings.Scope} Scope - The scope this script will run on.
- */
-bindings.Script = function(srcString,scope){
-	if(!(scope instanceof bindings.Scope) && !(scope instanceof bindings.Value)) throw new Error('second argument has to be a Scope or a Value');
-
-	this.string = srcString || '';
-	this.scope = scope;
-
-	return this;
-}
-bindings.Script.prototype = {
-	value: undefined,
-	success: true,
-	string: '',
-	scope: undefined,
-	requires: undefined,
-	eval: bindings._eval,
-	update: function(){
-		//run string
-		var e = this.eval(this.string,this.scope);
-		this.value = e.value;
-		this.success = e.success;
-
-		return this;
-	},
-	getRequires: function(refresh){
-		if(!this.requires || refresh){
-			this.requires = bindings._evalRequires(this.string,this.scope).requires;
-		}
-
-		return this.requires;
-	},
-	setEval: function(evalFunction){ //eval has to return a object containing two values, success and value
-		//test function
-		try{
-			var data = evalFunction('this',this.scope);
-
-			if(data !== undefined){
-				if(!data.hasOwnProperty('value') && !data.hasOwnProperty('success')){
-					throw new Error('function dose not return a object or returned object is missing values');
-				}
-			}
-			else{
-				throw new Error('function dose not return a object');
-			}
-
-			this.eval = evalFunction
-		}
-		catch(e){
-			console.error('invalid eval function');
-			console.error(e);
-		}
-	}
-}
-bindings.Script.prototype.constructor = bindings.Script;
-// binding types
-bindings.bindings['text'] = {
-	update: function(){
-		this.src.update();
-		this.el.innerText = this.src.value;
-	}
-}
-
-bindings.bindings['html'] = {
-	update: function(){
-		this.src.update();
-		this.el.innerHTML = this.src.value;
-	}
-}
-
-bindings.bindings['href'] = {
-	update: function(){
-		this.src.update();
-		this.el.setAttribute('href',this.src.value);
-	}
-}
-
-bindings.bindings['src'] = {
-	update: function(){
-		this.src.update();
-		this.el.setAttribute('src',this.src.value);
-	}
-}
-
-bindings.bindings['display'] = {
-	update: function(){
-		this.src.update();
-		if(!!this.src.value){
-			this.el.style.removeProperty('display','none');
-		}
-		else{
-			this.el.style.setProperty('display','none');
-		}
-	}
-}
-
-bindings.bindings['visible'] = {
-	update: function(){
-		this.src.update();
-		if(!!this.src.value){
-			this.el.style.setProperty('visibility','visible');
-		}
-		else{
-			this.el.style.setProperty('visibility','hidden');
-		}
-	}
-}
-
-bindings.bindings['enabled'] = {
-	update: function(){
-		this.src.update();
-		if(!!this.src.value){
-			this.el.removeAttribute('disabled');
-		}
-		else{
-			this.el.setAttribute('disabled','disabled');
-		}
-	}
-}
-
-bindings.bindings['disabled'] = {
-	update: function(){
-		this.src.update();
-		if(this.src.value){
-			this.el.setAttribute('disabled','disabled');
-		}
-		else{
-			this.el.removeAttribute('disabled');
-		}
-	}
-}
-
-bindings.bindings['if'] = {
-	children: [],
-	restoreChildren: function(){
-		if(!this.children.length){
-			for (var i = 0; i < this.children.length; i++) {
-				 this.el.appendChild(this.children[i]);
-			};
-		}
-	},
-	removeChildren: function(){
-		if(this.children.length){
-			while (this.el.children.length !== 0) {
-			    this.el.removeChild(this.el.children[0]);
-			}
-		}
-	},
-	bind: function(){
-		for (var i = 0; i < this.el.children.length; i++) {
-			this.children.push(this.el.children[i]);
-		};
-	},
-	update: function(){
-		this.src.update();
-		if(!!this.src.value){
-			this.restoreChildren();
-		}
-		else{
-			this.removeChildren();
-		}
-	}
-}
-
-bindings.bindings['ifnot'] = {
-	children: [],
-	restoreChildren: function(){
-		if(!this.children.length){
-			for (var i = 0; i < this.children.length; i++) {
-				 this.el.appendChild(this.children[i]);
-			};
-		}
-	},
-	removeChildren: function(){
-		if(this.children.length){
-			while (this.el.children.length !== 0) {
-			    this.el.removeChild(this.el.children[0]);
-			}
-		}
-	},
-	bind: function(){
-		for (var i = 0; i < this.el.children.length; i++) {
-			this.children.push(this.el.children[i]);
-		};
-	},
-	update: function(){
-		this.src.update();
-		if(!this.src.value){
-			this.restoreChildren();
-		}
-		else{
-			this.removeChildren();
-		}
-	}
-}
-
-// bindings.bindings['attr'] = { NOTE: have to have muti bindings first
-// 	update: function(){
-// 		this.src.update();
-// 		var attrs = this.src.value;
-
-// 		if(typeof attrs != 'object') throw new Error('bind-attr requires a object');
-
-// 		for (var i in attrs) {
-// 			this.el.setAttribute(i,attrs[i]);
-// 		};
-// 	}
-// }
-
-bindings.bindings['click'] = {
-	_event: undefined,
-	bind: function(){
-		this._event = function(){
-			this.src.update();
-		}.bind(this)
-
-		this.el.addEventListener('click',this._event);
-	},
-	unbind: function(){
-		this.el.removeEventListener('click',this._event);
-	}
-}
-
-bindings.bindings['dblclick'] = {
-	_event: undefined,
-	bind: function(){
-		this._event = function(){
-			this.src.update();
-		}.bind(this)
-
-		this.el.addEventListener('dblclick',this._event);
-	},
-	unbind: function(){
-		this.el.removeEventListener('dblclick',this._event);
-	}
-}
-bindings.bindings['submit'] = {
-	_event: undefined,
-	bind: function(){
-		this._event = this.submit.bind(this)
-
-		this.el.addEventListener('submit',this._event);
-	},
-	submit: function(event){
-		event.preventDefault();
-		this.src.update();
-	},
-	unbind: function(){
-		this.el.removeEventListener('submit',this._event);
-	}
-}
-
-bindings.bindings['value'] = {
-	_event: undefined,
-	_dontUpdate: false,
-	bind: function(){
-		this._event = this.change.bind(this);
-
-		this.el.addEventListener('change',this._event);
-
-		this.src.setEval(bindings._evalOnScope);
-	},
-	change: function(){ //event from el
-		this.src.update();
-
-		if(!(this.src.value instanceof bindings.Value)) throw new Error('bind-value requires a instance of bindings.Value');
-
-		this._dontUpdate = true;
-		this.src.value.updateValue(this.el.value);
-	},
-	update: function(){
-		if(!this._dontUpdate){
-			this.src.update();
-			this.el.value = this.src.value.value;
-		}
-		else{
-			this._dontUpdate = false;
-		}
-	},
-	unbind: function(){
-		this.el.removeEventListener('change',this._event);
-	}
-}
-
-bindings.bindings['live-update'] = {
-	event: function(){
-		if ("createEvent" in document) {
-		    var evt = document.createEvent("HTMLEvents");
-		    evt.initEvent("change", false, true);
-		    this.el.dispatchEvent(evt);
-		}
-	},
-	bind: function(){
-		this.el.addEventListener('keypress',this.event.bind(this))
-		this.el.addEventListener('keyup',this.event.bind(this))
-	},
-	unbind: function(){
-		this.el.removeEventListener('keypress',this.event.bind(this))
-		this.el.removeEventListener('keyup',this.event.bind(this))
-	}
-}
-
-bindings.bindings['with'] = {
-	bind: function(){
-		this.src.setEval(bindings._evalOnScope);
-	},
-	update: function(){
-		this.src.update();
-		if(!(this.src.value instanceof bindings.Scope)) throw new Error('with requires a Object or Array')
-
-		for (var i = 0; i < this.el.children.length; i++) {
-			this.el.children[i].__scope__ = this.src.value;
-		};
-	}
-}
-
-bindings.bindings['foreach'] = {
-	__foreach_children__: [],
-	removeAllChildren: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
-	},
-	bind: function(){
-		this.src.setEval(bindings._evalOnScope);
-
-		var a = [];
-		for (var i = 0; i < this.el.children.length; i++) {
-			a.push(this.el.children[i]);
-		};
-		this.__foreach_children__ = a;
-	},
-	update: function(){
-		this.removeAllChildren();
-		this.src.update();
-
-		if(!(this.src.value instanceof bindings.Scope)) throw new Error('foreach requires a Object or Array')
-
-		for (var i in this.src.value.values) {
-			for (var k = 0; k < this.__foreach_children__.length; k++) {
-				var el = this.__foreach_children__[k].cloneNode(true);
-				el.__scope__ = this.src.value.values[i];
-				this.el.appendChild(el)
-			};
-		};
-	},
-	unbind: function(){
-		this.removeAllChildren();
-		for (var k = 0; k < this.__foreach_children__.length; k++) {
-			var el = this.__foreach_children__[k].cloneNode(true);
-			this.el.appendChild(el)
-		};
-	}
-}
-
-bindings.bindings['repeat'] = {
-	__foreach_children__: [],
-	removeAllChildren: function(){
-		while (this.el.children.length !== 0) {
-		    this.el.removeChild(this.el.children[0]);
-		}
-	},
-	bind: function(){
-		var a = [];
-		for (var i = 0; i < this.el.children.length; i++) {
-			a.push(this.el.children[i]);
-		};
-		this.__foreach_children__ = a;
-	},
-	update: function(){
-		this.removeAllChildren();
-		this.src.update();
-
-		for (var i = 0; i < this.src.value; i++) {
-			for (var k = 0; k < this.__foreach_children__.length; k++) {
-				var el = this.__foreach_children__[k].cloneNode(true);
-				this.el.appendChild(el)
-			};
-		};
-	},
-	unbind: function(){
-		this.removeAllChildren();
-		for (var k = 0; k < this.__foreach_children__.length; k++) {
-			var el = this.__foreach_children__[k].cloneNode(true);
-			this.el.appendChild(el)
-		};
-	}
-}
-
-})()
+var bindings;
+(function (bindings) {
+    var Scope = (function (_super) {
+        __extends(Scope, _super);
+        function Scope(key, object, modal, parent) {
+            if (parent === void 0) { parent = undefined; }
+            _super.call(this);
+            this.key = key;
+            this.object = object;
+            this.modal = modal;
+            this.parent = parent;
+            this.values = (object instanceof Array) ? [] : {};
+            this.setKeys(this.object);
+            //watch for changes
+            Object.observe(this.object, this.objectChange.bind(this));
+        }
+        Scope.prototype.getKey = function (value) {
+            for (var i in this.values) {
+                if (this.values[i].value == value) {
+                    return i;
+                }
+            }
+            ;
+        };
+        Scope.prototype.setKey = function (key, value, dontFire) {
+            if (dontFire === void 0) { dontFire = false; }
+            if (this.values[key] == undefined) {
+                //add it
+                if (value instanceof Object) {
+                    this.values[key] = new bindings.Scope(key, value, this.modal, this);
+                }
+                else {
+                    this.values[key] = new bindings.Value(key, value, this);
+                }
+            }
+            if (this.values[key] instanceof bindings.Value) {
+                this.values[key].setValue(value);
+            }
+            else if (this.values[key] instanceof bindings.Scope) {
+                this.values[key].setKeys(value);
+            }
+            if (!dontFire)
+                this.update();
+        };
+        Scope.prototype.setKeys = function (keys, dontFire) {
+            if (dontFire === void 0) { dontFire = false; }
+            for (var i in keys) {
+                this.setKey(i, keys[i], true);
+            }
+            ;
+            if (!dontFire)
+                this.update();
+        };
+        Scope.prototype.removeKey = function (key, dontFire) {
+            if (dontFire === void 0) { dontFire = false; }
+            delete this.values[key];
+            if (!dontFire)
+                this.emit('change', this);
+        };
+        Scope.prototype.updateKey = function (key, value) {
+            this.object[key] = value;
+        };
+        Scope.prototype.updateKeys = function (keys) {
+            for (var i in keys) {
+                this.updateKey(i, keys[i]);
+            }
+        };
+        Scope.prototype.update = function () {
+            this.emit('change', this.object);
+        };
+        Scope.prototype.objectChange = function (data) {
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].name == '_bindings')
+                    continue;
+                switch (data[i].type) {
+                    case 'add':
+                        this.setKey(data[i].name, data[i].object[data[i].name], true);
+                        break;
+                    case 'update':
+                        this.setKey(data[i].name, data[i].object[data[i].name], true);
+                        break;
+                    case 'delete':
+                        this.removeKey(data[i].name, true);
+                        break;
+                }
+            }
+            this.update();
+        };
+        Scope.prototype.emit = function (event, data, direction) {
+            if (data === void 0) { data = undefined; }
+            if (direction === void 0) { direction = ''; }
+            _super.prototype.emit.call(this, event, data);
+            switch (direction) {
+                case 'down':
+                    for (var i in this.values) {
+                        if (this.values[i] instanceof bindings.Scope) {
+                            this.values[i].emit(event, data, direction);
+                        }
+                        else {
+                            this.values[i].emit(event, data);
+                        }
+                    }
+                    break;
+                case 'up':
+                    if (this.parent) {
+                        this.parent.emit(event, data, direction);
+                    }
+                    break;
+            }
+        };
+        return Scope;
+    })(EventEmiter);
+    bindings.Scope = Scope;
+})(bindings || (bindings = {}));
+/// <reference path="bindings.ts" />
+var bindings;
+(function (bindings) {
+    var Value = (function (_super) {
+        __extends(Value, _super);
+        function Value(key, value, parent) {
+            _super.call(this);
+            this.key = '';
+            this.key = key;
+            this.value = value;
+            this.parent = parent;
+        }
+        Value.prototype.setValue = function (value) {
+            this.value = value;
+            this.update();
+            return this.value;
+        };
+        Value.prototype.updateValue = function (value) {
+            this.parent.updateKey(this.key, value);
+        };
+        Value.prototype.update = function () {
+            this.emit('change', this.value);
+        };
+        return Value;
+    })(EventEmiter);
+    bindings.Value = Value;
+})(bindings || (bindings = {}));
+/// <reference path="bindings.ts" />
+var bindings;
+(function (bindings) {
+    var Binding = (function () {
+        function Binding(element, attr) {
+            this.element = element;
+            this.attr = attr;
+            this.expression = new bindings.expression(attr, this.scope);
+        }
+        Object.defineProperty(Binding.prototype, "scope", {
+            get: function () {
+                return this.element.__scope__;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Binding.prototype.run = function () {
+        };
+        Binding.prototype.unbind = function () {
+        };
+        Binding.id = '';
+        return Binding;
+    })();
+    bindings.Binding = Binding;
+    var OneWayBinding = (function (_super) {
+        __extends(OneWayBinding, _super);
+        function OneWayBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.dependencies = []; //a list of scopes and values this bindings uses
+            this.updateDependencies();
+        }
+        OneWayBinding.prototype.dependencyChange = function () {
+            this.run();
+        };
+        OneWayBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            this.expression.run();
+        };
+        OneWayBinding.prototype.unbind = function () {
+            this.unbindDependencies();
+        };
+        OneWayBinding.prototype.getDependencies = function (refresh) {
+            if (refresh === void 0) { refresh = false; }
+            if (refresh || this.dependencies == undefined) {
+                //get dependencies
+                this.dependencies = this.expression.getDependencies().requires;
+            }
+            return this.dependencies;
+        };
+        OneWayBinding.prototype.updateDependencies = function () {
+            this.getDependencies(true);
+            this.unbindDependencies();
+            this.bindDependencies();
+        };
+        OneWayBinding.prototype.bindDependencies = function () {
+            for (var i = 0; i < this.dependencies.length; i++) {
+                this.dependencies[i].on('change', this.dependencyChange.bind(this));
+            }
+        };
+        OneWayBinding.prototype.unbindDependencies = function () {
+            for (var i = 0; i < this.dependencies.length; i++) {
+                this.dependencies[i].off('change', this.dependencyChange.bind(this));
+            }
+        };
+        return OneWayBinding;
+    })(bindings.Binding);
+    bindings.OneWayBinding = OneWayBinding;
+    var TwoWayBinding = (function (_super) {
+        __extends(TwoWayBinding, _super);
+        function TwoWayBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.domEvents = []; //add events to this list to bind to them
+            this.dontUpdate = false;
+            this.bindEvents();
+        }
+        TwoWayBinding.prototype.change = function (event) {
+            this.dontUpdate = true; //dont update (call this.run) the element
+        };
+        TwoWayBinding.prototype.dependencyChange = function () {
+            if (!this.dontUpdate) {
+                _super.prototype.dependencyChange.call(this);
+            }
+            this.dontUpdate = false;
+        };
+        TwoWayBinding.prototype.unbind = function () {
+            _super.prototype.unbind.call(this);
+            this.unbindEvents();
+        };
+        TwoWayBinding.prototype.updateEvents = function () {
+            this.unbindEvents();
+            this.bindEvents();
+        };
+        TwoWayBinding.prototype.bindEvents = function () {
+            for (var i = 0; i < this.domEvents.length; i++) {
+                this.element.addEventListener(this.domEvents[i], this.change.bind(this));
+            }
+        };
+        TwoWayBinding.prototype.unbindEvents = function () {
+            for (var i = 0; i < this.domEvents.length; i++) {
+                this.element.removeEventListener(this.domEvents[i], this.change.bind(this));
+            }
+        };
+        return TwoWayBinding;
+    })(bindings.OneWayBinding);
+    bindings.TwoWayBinding = TwoWayBinding;
+    var EventBinding = (function (_super) {
+        __extends(EventBinding, _super);
+        function EventBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.element = element;
+            this.attr = attr;
+            this.domEvents = [];
+            this.bindEvents();
+        }
+        EventBinding.prototype.change = function (event) {
+            this.expression.run();
+        };
+        EventBinding.prototype.unbind = function () {
+            _super.prototype.unbind.call(this);
+            this.unbindEvents();
+        };
+        EventBinding.prototype.updateEvents = function () {
+            this.unbindEvents();
+            this.bindEvents();
+        };
+        EventBinding.prototype.bindEvents = function () {
+            for (var i = 0; i < this.domEvents.length; i++) {
+                this.element.addEventListener(this.domEvents[i], this.change.bind(this));
+            }
+        };
+        EventBinding.prototype.unbindEvents = function () {
+            for (var i = 0; i < this.domEvents.length; i++) {
+                this.element.removeEventListener(this.domEvents[i], this.change.bind(this));
+            }
+        };
+        return EventBinding;
+    })(bindings.Binding);
+    bindings.EventBinding = EventBinding;
+})(bindings || (bindings = {}));
+var bindingTypes;
+(function (bindingTypes) {
+    function createBinding(type, element, attr) {
+        var binding;
+        for (var i in this) {
+            if (this[i].id == type) {
+                binding = new this[i](element, attr);
+                break;
+            }
+        }
+        return binding;
+    }
+    bindingTypes.createBinding = createBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="bindings.ts" />
+var bindings;
+(function (bindings) {
+    var expression = (function () {
+        function expression(attr, scope) {
+            this.attr = attr;
+            this.scope = scope;
+            this.success = true;
+            this.value = undefined;
+            this.dependencies = [];
+        }
+        expression.prototype.run = function () {
+            var data = {
+                value: undefined,
+                success: true,
+            };
+            var addedScope = {
+                $modal: (this.scope.modal) ? this.scope.modal.scope.object : undefined,
+                $parent: (this.scope.parent) ? this.scope.parent.object : undefined
+            };
+            var funcString = 'new Function("addedScope","', args = [];
+            var context = this.scope.object;
+            args.push(addedScope);
+            funcString += 'with(this){';
+            funcString += 'with(addedScope){';
+            funcString += 'return ';
+            funcString += this.attr.value;
+            funcString += '}';
+            funcString += '}';
+            funcString += '")';
+            var func = eval(funcString);
+            try {
+                data.value = func.apply(context, args);
+            }
+            catch (e) {
+                data.success = false;
+            }
+            this.value = data.value;
+            this.success = data.success;
+            return data;
+        };
+        expression.prototype.runOnScope = function () {
+            var data = {
+                value: undefined,
+                success: false
+            };
+            var _data = this.getDependencies();
+            data.value = _data.gets[_data.gets.length - 1];
+            data.success = !!data.value;
+            return data;
+        };
+        expression.prototype.getDependencies = function () {
+            var data = {
+                success: true,
+                requires: [],
+                sets: [],
+                gets: [] //array of values got
+            };
+            var hidden = {
+                console: {},
+                window: {},
+                navigator: {},
+                localStorage: {},
+                location: {},
+                alert: bindings.noop,
+                eval: bindings.noop
+            };
+            var addedScope = {
+                $modal: (this.scope.modal) ? this.buildContextFromScope(this.scope.modal.scope, data) : undefined,
+                $parent: (this.scope.parent) ? this.buildContextFromScope(this.scope.parent, data) : undefined
+            };
+            var funcString = 'new Function("hidden","addedScope",', args = [];
+            var context = {};
+            args.push(hidden);
+            args.push(addedScope);
+            //build context
+            context = this.buildContextFromScope(this.scope, data);
+            funcString += '"';
+            funcString += 'with(this){';
+            funcString += 'with(hidden){';
+            funcString += 'with(addedScope){';
+            funcString += 'return ';
+            funcString += this.attr.value;
+            funcString += '}';
+            funcString += '}';
+            funcString += '}';
+            funcString += '")';
+            var func = eval(funcString);
+            try {
+                func.apply(context, args);
+            }
+            catch (e) {
+                data.success = false;
+            }
+            this.dependencies = data.requires;
+            return data;
+        };
+        expression.prototype.buildContextFromScope = function (scope, data) {
+            var object = (scope.object instanceof Array) ? [] : {};
+            for (var i in scope.values) {
+                object.__defineGetter__(i, function (object, i, data, fn) {
+                    if (data.gets.indexOf(this.values[i]) == -1) {
+                        data.requires.push(this.values[i]);
+                        data.gets.push(this.values[i]);
+                    }
+                    if (this.values[i].value instanceof Function) {
+                        if (this.values[i] instanceof bindings.Scope) {
+                            return fn(this.values[i]);
+                            ;
+                        }
+                        else {
+                            return this.values[i].value;
+                        }
+                    }
+                }.bind(scope, object, i, data, this.buildContextFromScope));
+                object.__defineSetter__(i, function (object, i, data, fn, val) {
+                    data.requires.push(this.values[i]);
+                    data.sets.push(this.values[i]);
+                    // this.values[i].setValue(val);
+                    // object[i] = val;
+                }.bind(scope, object, i, data, this.buildContextFromScope));
+            }
+            ;
+            return object;
+        };
+        return expression;
+    })();
+    bindings.expression = expression;
+})(bindings || (bindings = {}));
+/// <reference path="../bindings.ts" />
+// bind-click
+var bindingTypes;
+(function (bindingTypes) {
+    var ClickBinding = (function (_super) {
+        __extends(ClickBinding, _super);
+        function ClickBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.domEvents = ['click'];
+            this.updateEvents();
+        }
+        ClickBinding.id = 'click';
+        return ClickBinding;
+    })(bindings.EventBinding);
+    bindingTypes.ClickBinding = ClickBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-enabled
+var bindingTypes;
+(function (bindingTypes) {
+    var EnabledBinding = (function (_super) {
+        __extends(EnabledBinding, _super);
+        function EnabledBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.run();
+        }
+        EnabledBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            if (this.expression.value) {
+                this.element.removeAttribute('disabled');
+            }
+            else {
+                this.element.setAttribute('disabled', 'disabled');
+            }
+        };
+        EnabledBinding.id = 'enabled';
+        return EnabledBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.EnabledBinding = EnabledBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-disabled
+var bindingTypes;
+(function (bindingTypes) {
+    var DisabledBinding = (function (_super) {
+        __extends(DisabledBinding, _super);
+        function DisabledBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.run();
+        }
+        DisabledBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            if (!this.expression.value) {
+                this.element.removeAttribute('disabled');
+            }
+            else {
+                this.element.setAttribute('disabled', 'disabled');
+            }
+        };
+        DisabledBinding.id = 'disabled';
+        return DisabledBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.DisabledBinding = DisabledBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-foreach
+var bindingTypes;
+(function (bindingTypes) {
+    var ForEachBinding = (function (_super) {
+        __extends(ForEachBinding, _super);
+        function ForEachBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.children = [];
+            for (var i = 0; i < this.element.children.length; i++) {
+                this.children.push(this.element.children[i]);
+            }
+            this.removeAllChildren();
+            this.run();
+        }
+        ForEachBinding.prototype.restoreChildren = function () {
+            for (var i in this.children) {
+                this.element.appendChild(this.children[i]);
+            }
+        };
+        ForEachBinding.prototype.removeAllChildren = function () {
+            while (this.element.children.length !== 0) {
+                this.element.removeChild(this.element.children[0]);
+            }
+        };
+        ForEachBinding.prototype.run = function () {
+            // super.run(); dont run because we arnt going to use .run on are expression
+            var scope = this.expression.runOnScope().value;
+            this.removeAllChildren();
+            if (scope instanceof bindings.Scope) {
+                for (var i in scope.values) {
+                    for (var k = 0; k < this.children.length; k++) {
+                        var el = this.children[k].cloneNode(true);
+                        el.__scope__ = scope.values[i];
+                        this.element.appendChild(el);
+                    }
+                    ;
+                }
+                ;
+            }
+            else {
+                throw new Error('bind-foreach requires a Object or Array');
+            }
+        };
+        ForEachBinding.prototype.unbind = function () {
+            this.removeAllChildren();
+            _super.prototype.unbind.call(this);
+            this.restoreChildren();
+        };
+        ForEachBinding.id = 'foreach';
+        return ForEachBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.ForEachBinding = ForEachBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-if
+var bindingTypes;
+(function (bindingTypes) {
+    var IfBinding = (function (_super) {
+        __extends(IfBinding, _super);
+        function IfBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.children = [];
+            for (var i = 0; i < this.element.children.length; i++) {
+                this.children.push(this.element.children[i]);
+            }
+            this.run();
+        }
+        IfBinding.prototype.restoreChildren = function () {
+            for (var i in this.children) {
+                this.element.appendChild(this.children[i]);
+            }
+        };
+        IfBinding.prototype.removeChildren = function () {
+            while (this.element.children.length !== 0) {
+                this.element.removeChild(this.element.children[0]);
+            }
+        };
+        IfBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            if (this.expression.value) {
+                this.restoreChildren();
+            }
+            else {
+                this.removeChildren();
+            }
+        };
+        IfBinding.prototype.unbind = function () {
+            _super.prototype.unbind.call(this);
+            this.removeChildren();
+            this.restoreChildren();
+        };
+        IfBinding.id = 'if';
+        return IfBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.IfBinding = IfBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-ifnot
+var bindingTypes;
+(function (bindingTypes) {
+    var IfNotBinding = (function (_super) {
+        __extends(IfNotBinding, _super);
+        function IfNotBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.children = [];
+            for (var i = 0; i < this.element.children.length; i++) {
+                this.children.push(this.element.children[i]);
+            }
+            this.run();
+        }
+        IfNotBinding.prototype.restoreChildren = function () {
+            for (var i in this.children) {
+                this.element.appendChild(this.children[i]);
+            }
+        };
+        IfNotBinding.prototype.removeChildren = function () {
+            while (this.element.children.length !== 0) {
+                this.element.removeChild(this.element.children[0]);
+            }
+        };
+        IfNotBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            if (!this.expression.value) {
+                this.restoreChildren();
+            }
+            else {
+                this.removeChildren();
+            }
+        };
+        IfNotBinding.prototype.unbind = function () {
+            _super.prototype.unbind.call(this);
+            this.removeChildren();
+            this.restoreChildren();
+        };
+        IfNotBinding.id = 'ifnot';
+        return IfNotBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.IfNotBinding = IfNotBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-live-update
+var bindingTypes;
+(function (bindingTypes) {
+    var LiveUpdateBinding = (function (_super) {
+        __extends(LiveUpdateBinding, _super);
+        function LiveUpdateBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.domEvents = ['keypress', 'keyup'];
+            this.updateEvents();
+        }
+        LiveUpdateBinding.prototype.change = function (event) {
+            //super.change(event); //dont run the expression because we dont have on
+            if ("createEvent" in document) {
+                var evt = document.createEvent("HTMLEvents");
+                evt.initEvent("change", false, true);
+                this.element.dispatchEvent(evt);
+            }
+        };
+        LiveUpdateBinding.id = 'live-update';
+        return LiveUpdateBinding;
+    })(bindings.EventBinding);
+    bindingTypes.LiveUpdateBinding = LiveUpdateBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-repeat
+var bindingTypes;
+(function (bindingTypes) {
+    var RepeatBinding = (function (_super) {
+        __extends(RepeatBinding, _super);
+        function RepeatBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.children = [];
+            for (var i = 0; i < this.element.children.length; i++) {
+                this.children.push(this.element.children[i]);
+            }
+            this.removeChildren();
+            this.run();
+        }
+        RepeatBinding.prototype.restoreChildren = function () {
+            for (var i in this.children) {
+                this.element.appendChild(this.children[i]);
+            }
+        };
+        RepeatBinding.prototype.removeChildren = function () {
+            while (this.element.children.length !== 0) {
+                this.element.removeChild(this.element.children[0]);
+            }
+        };
+        RepeatBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            this.removeChildren();
+            for (var i = 0; i < this.expression.value; i++) {
+                for (var k = 0; k < this.children.length; k++) {
+                    var el = this.children[k].cloneNode(true);
+                    this.element.appendChild(el);
+                }
+                ;
+            }
+            ;
+        };
+        RepeatBinding.prototype.unbind = function () {
+            this.removeChildren();
+            _super.prototype.unbind.call(this);
+            this.restoreChildren();
+        };
+        RepeatBinding.id = 'repeat';
+        return RepeatBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.RepeatBinding = RepeatBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-submit
+var bindingTypes;
+(function (bindingTypes) {
+    var SubmitBinding = (function (_super) {
+        __extends(SubmitBinding, _super);
+        function SubmitBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.domEvents = ['submit'];
+            this.updateEvents();
+        }
+        SubmitBinding.prototype.change = function (event) {
+            _super.prototype.change.call(this, event);
+            event.preventDefault();
+        };
+        SubmitBinding.id = 'submit';
+        return SubmitBinding;
+    })(bindings.EventBinding);
+    bindingTypes.SubmitBinding = SubmitBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-text
+var bindingTypes;
+(function (bindingTypes) {
+    var TextBinding = (function (_super) {
+        __extends(TextBinding, _super);
+        function TextBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.oldText = this.element.textContent;
+            this.run();
+        }
+        TextBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            this.element.innerText = this.expression.value;
+        };
+        TextBinding.prototype.unbind = function () {
+            _super.prototype.unbind.call(this);
+            this.element.textContent = this.oldText;
+        };
+        TextBinding.id = 'text';
+        return TextBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.TextBinding = TextBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+//bind-value
+var bindingTypes;
+(function (bindingTypes) {
+    var ValueBinding = (function (_super) {
+        __extends(ValueBinding, _super);
+        function ValueBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.element = element;
+            this.domEvents = ['change'];
+            this.updateEvents();
+        }
+        ValueBinding.prototype.run = function () {
+            this.element.value = this.expression.value;
+        };
+        ValueBinding.prototype.change = function (event) {
+            _super.prototype.change.call(this, event);
+            var value = this.expression.runOnScope().value;
+            if (value instanceof bindings.Value) {
+                value.updateValue(this.element.value);
+            }
+        };
+        ValueBinding.id = 'value';
+        return ValueBinding;
+    })(bindings.TwoWayBinding);
+    bindingTypes.ValueBinding = ValueBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-with
+var bindingTypes;
+(function (bindingTypes) {
+    var WithBinding = (function (_super) {
+        __extends(WithBinding, _super);
+        function WithBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.run();
+        }
+        WithBinding.prototype.run = function () {
+            // super.run(); dont run because we arnt going to use .run on are expression
+            var scope = this.expression.runOnScope().value;
+            if (scope instanceof bindings.Scope) {
+                for (var i = 0; i < this.element.children.length; i++) {
+                    var el = this.element.children[i];
+                    el.__scope__ = scope;
+                }
+            }
+            else {
+                throw new Error('bind-with requires a Object or Array');
+            }
+        };
+        WithBinding.id = 'with';
+        return WithBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.WithBinding = WithBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-visible
+var bindingTypes;
+(function (bindingTypes) {
+    var VisibleBinding = (function (_super) {
+        __extends(VisibleBinding, _super);
+        function VisibleBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.run();
+        }
+        VisibleBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            if (this.expression.value) {
+                this.element.style.display = '';
+            }
+            else {
+                this.element.style.display = 'none';
+            }
+        };
+        VisibleBinding.id = 'visible';
+        return VisibleBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.VisibleBinding = VisibleBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="eventEmiter.ts" />
+/// <reference path="modal.ts" />
+/// <reference path="scope.ts" />
+/// <reference path="value.ts" />
+/// <reference path="binding.ts" />
+/// <reference path="expression.ts" />
+//types
+/// <reference path="bindings/click.ts" />
+/// <reference path="bindings/enabled.ts" />
+/// <reference path="bindings/disabled.ts" />
+/// <reference path="bindings/foreach.ts" />
+/// <reference path="bindings/if.ts" />
+/// <reference path="bindings/ifnot.ts" />
+/// <reference path="bindings/live-update.ts" />
+/// <reference path="bindings/repeat.ts" />
+/// <reference path="bindings/submit.ts" />
+/// <reference path="bindings/text.ts" />
+/// <reference path="bindings/value.ts" />
+/// <reference path="bindings/with.ts" />
+/// <reference path="bindings/visible.ts" />
+var bindings;
+(function (bindings) {
+    function createModal(object, element) {
+        if (object === void 0) { object = {}; }
+        if (element === void 0) { element = document; }
+        if (element instanceof Document)
+            element = element.body;
+        var modal = new bindings.Modal(object, element);
+        object._bindings = modal;
+        return object;
+    }
+    bindings.createModal = createModal;
+    function applyBindings(modal, element) {
+        if (modal === void 0) { modal = {}; }
+        if (element === void 0) { element = document; }
+        if (element instanceof Document)
+            element = element.body;
+        if (modal instanceof bindings.Modal) {
+            modal.applyBindings(element);
+        }
+        else if (modal._bindings instanceof bindings.Modal) {
+            modal._bindings.applyBindings(element);
+        }
+    }
+    bindings.applyBindings = applyBindings;
+    function duplicateObject(obj2, count) {
+        if (count === void 0) { count = 20; }
+        if (obj2 instanceof Object && obj2 !== null) {
+            // count = (count !== undefined)? count : 20;
+            if (count > 0) {
+                // see if its an array
+                if (obj2.hasOwnProperty('length')) {
+                    var obj = new Array(0);
+                    for (var i = 0; i < obj2.length; i++) {
+                        if (typeof obj2[i] !== 'object') {
+                            obj[i] = obj2[i];
+                        }
+                        else {
+                            obj[i] = this.duplicateObject(obj2[i], count - 1);
+                        }
+                    }
+                    ;
+                }
+                else {
+                    var obj;
+                    for (var k in obj2) {
+                        if (!(obj2[k] instanceof Object)) {
+                            obj[k] = obj2[k];
+                        }
+                        else {
+                            obj[k] = this.duplicateObject(obj2[k], count - 1);
+                        }
+                    }
+                }
+            }
+            return obj;
+        }
+        else {
+            return obj2;
+        }
+    }
+    bindings.duplicateObject = duplicateObject;
+    function noop() { }
+    bindings.noop = noop;
+})(bindings || (bindings = {}));
+//# sourceMappingURL=bindings.js.map
