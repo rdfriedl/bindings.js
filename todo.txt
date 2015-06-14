@@ -1,5 +1,6 @@
 - add muti bindings, like bind-event and bind-attr
 - going to have to build contexts for all eval functions so you can do, "this.$parent" or "$parent.something" or "$parent.$parent"
-- listen for dom remove/add events so we can bind/unbind bindings
 - fix bug where if the user uses a "&" or a "|" in there expression it will only bind to the first value ie. "array1.length > 0 && array2.length > 0" it will only bind to array one
-- rename script to expression
+- add inline bindigns
+- add comment bindings
+- allow elements to have aditional scopes for the eval function

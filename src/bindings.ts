@@ -17,7 +17,10 @@
 /// <reference path="bindings/text.ts" />
 /// <reference path="bindings/value.ts" />
 /// <reference path="bindings/with.ts" />
+/// <reference path="bindings/html.ts" />
 /// <reference path="bindings/visible.ts" />
+/// <reference path="bindings/href.ts" />
+/// <reference path="bindings/src.ts" />
 
 module bindings {
 	export function createModal(object:any = {},element:any = document){

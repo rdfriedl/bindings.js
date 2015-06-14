@@ -7,7 +7,7 @@ module bindingTypes{
 		constructor(element: HTMLElement, attr: Attr){
 			super(element, attr);
 
-			this.domEvents = ['keypress','keyup'];
+			this.domEvents = ['input'];
 			this.updateEvents();
 		}
 
