@@ -11,6 +11,7 @@ module bindingTypes{
 			this.updateEvents();
 		}
 		public run(){
+			super.run();
 			this.element.value = this.expression.value;
 		}
 		public change(event:Event){

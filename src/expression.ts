@@ -109,7 +109,7 @@ module bindings{
 			return data;
 		}
 
-		private buildContext(scope:bindings.Scope,requires:any = {requires: [],gets: [],sets: []},dontSet:boolean = false):any{
+		private buildContext(scope: bindings.Scope, requires: any = { requires: [], gets: [], sets: [] }, dontSet: boolean = false): any {
 			var object: any = (scope.object instanceof Array) ? [] : {};
 			var get: Function = function(scope, object, index, requires) {
 				if (requires.gets.indexOf(scope.values[index]) == -1) {
@@ -117,8 +117,8 @@ module bindings{
 					requires.gets.push(scope.values[index]);
 				}
 
-				if(scope.values[index] instanceof bindings.Scope){
-					return this.buildContext(scope.values[index],requires,dontSet).context;
+				if (scope.values[index] instanceof bindings.Scope) {
+					return this.buildContext(scope.values[index], requires, dontSet).context;
 				}
 				else if (scope.values[index] instanceof bindings.Value) {
 					if (!(scope.values[index].value instanceof Function) || !dontSet) {
@@ -131,8 +131,7 @@ module bindings{
 				requires.sets.push(scope.values[index]);
 
 				if (!dontSet) {
-					scope.values[index].setValue(val);
-					object[index] = val;
+					scope.object[index] = val;
 				}
 			};
 

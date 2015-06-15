@@ -24,7 +24,7 @@ module bindings {
 		public setKey(key:string,value:any,dontFire:boolean = false){
 			if(this.values[key] == undefined){
 				//add it
-				if(value instanceof Object){
+				if(typeof value == 'object'){
 					this.values[key] = new bindings.Scope(key,value,this.modal,this);
 				}
 				else{

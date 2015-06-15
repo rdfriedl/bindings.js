@@ -156,7 +156,7 @@ var bindings;
             if (dontFire === void 0) { dontFire = false; }
             if (this.values[key] == undefined) {
                 //add it
-                if (value instanceof Object) {
+                if (typeof value == 'object') {
                     this.values[key] = new bindings.Scope(key, value, this.modal, this);
                 }
                 else {
@@ -538,8 +538,7 @@ var bindings;
                 requires.requires.push(scope.values[index]);
                 requires.sets.push(scope.values[index]);
                 if (!dontSet) {
-                    scope.values[index].setValue(val);
-                    object[index] = val;
+                    scope.object[index] = val;
                 }
             };
             for (var i in scope.values) {
@@ -912,6 +911,7 @@ var bindingTypes;
             this.updateEvents();
         }
         ValueBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
             this.element.value = this.expression.value;
         };
         ValueBinding.prototype.change = function (event) {
