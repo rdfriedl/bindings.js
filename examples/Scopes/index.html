@@ -54,6 +54,11 @@
 			<li>item</li>
 		</ul>
 
+		<p>Parent</p>
+		<div bind-with="profile">
+			<span bind-text="$parent.title"></span> <i><small>$parent.title</small></i>
+		</div>
+
 		<script type="text/javascript">
 			myModal = {
 				title: 'Scopes',
