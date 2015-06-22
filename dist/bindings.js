@@ -74,6 +74,7 @@ var bindings;
                 element.__bindings__ = [];
             }
             element.__scope__ = scope;
+            element.__addedScope__ = element.__addedScope__ || {};
             var data = this.parseBindings(element);
             element.__bindings__ = data;
             bindingsCreated = bindingsCreated.concat(element.__bindings__);
@@ -82,6 +83,7 @@ var bindings;
                 for (var i = 0; i < element.children.length; i++) {
                     var child = element.children[i];
                     child.__scope__ = child.__scope__ || scope;
+                    child.__addedScope__ = child.__addedScope__ || element.__addedScope__;
                     this.buildBindings(child, child.__scope__);
                     bindingsCreated = bindingsCreated.concat(child.__bindings__);
                 }
@@ -276,7 +278,7 @@ var bindings;
         function Binding(element, attr) {
             this.element = element;
             this.attr = attr;
-            this.expression = new bindings.expression(attr, this.scope);
+            this.expression = new bindings.Expression(element, attr, this.scope);
         }
         Object.defineProperty(Binding.prototype, "scope", {
             get: function () {
@@ -425,29 +427,33 @@ var bindingTypes;
 /// <reference path="bindings.ts" />
 var bindings;
 (function (bindings) {
-    var expression = (function () {
-        function expression(attr, scope) {
+    var Expression = (function () {
+        function Expression(element, attr, scope) {
+            this.element = element;
             this.attr = attr;
             this.scope = scope;
             this.success = true;
             this.value = undefined;
             this.dependencies = [];
         }
-        expression.prototype.run = function () {
+        Expression.prototype.run = function () {
             var data = {
                 value: undefined,
                 success: true,
             };
-            var addedScope = {
+            var variables = {
                 $modal: (this.scope.modal) ? this.scope.modal.scope.object : undefined,
             };
-            var funcString = 'new Function("addedScope","', args = [];
+            var funcString = 'new Function("variables","addedScope","', args = [];
             var context = this.buildContext(this.scope).context;
-            args.push(addedScope);
+            args.push(variables);
+            args.push(this.element.__addedScope__ || {});
             funcString += 'with(this){';
+            funcString += 'with(variables){';
             funcString += 'with(addedScope){';
             funcString += 'return ';
             funcString += this.attr.value;
+            funcString += '}';
             funcString += '}';
             funcString += '}';
             funcString += '")';
@@ -462,7 +468,7 @@ var bindings;
             this.success = data.success;
             return data;
         };
-        expression.prototype.runOnScope = function () {
+        Expression.prototype.runOnScope = function () {
             var data = {
                 value: undefined,
                 success: false
@@ -472,7 +478,7 @@ var bindings;
             data.success = !!data.value;
             return data;
         };
-        expression.prototype.getDependencies = function () {
+        Expression.prototype.getDependencies = function () {
             var data = {
                 success: true,
                 requires: [],
@@ -488,20 +494,23 @@ var bindings;
                 alert: bindings.noop,
                 eval: bindings.noop
             };
-            var addedScope = {
+            var variables = {
                 $modal: (this.scope.modal) ? this.buildContext(this.scope.modal.scope, data) : undefined,
             };
-            var funcString = 'new Function("hidden","addedScope",', args = [];
+            var funcString = 'new Function("hidden","variables","addedScope",', args = [];
             args.push(hidden);
-            args.push(addedScope);
+            args.push(variables);
+            args.push(this.element.__addedScope__ || {});
             //build context
             var context = this.buildContext(this.scope, data, true);
             funcString += '"';
             funcString += 'with(this){';
             funcString += 'with(hidden){';
+            funcString += 'with(variables){';
             funcString += 'with(addedScope){';
             funcString += 'return ';
             funcString += this.attr.value;
+            funcString += '}';
             funcString += '}';
             funcString += '}';
             funcString += '}';
@@ -516,7 +525,7 @@ var bindings;
             this.dependencies = data.requires;
             return data;
         };
-        expression.prototype.buildContext = function (scope, requires, dontSet) {
+        Expression.prototype.buildContext = function (scope, requires, dontSet) {
             if (requires === void 0) { requires = { requires: [], gets: [], sets: [] }; }
             if (dontSet === void 0) { dontSet = false; }
             var object = (scope.object instanceof Array) ? [] : {};
@@ -575,9 +584,9 @@ var bindings;
                 requires: requires
             };
         };
-        return expression;
+        return Expression;
     })();
-    bindings.expression = expression;
+    bindings.Expression = Expression;
 })(bindings || (bindings = {}));
 /// <reference path="../bindings.ts" />
 // bind-click
@@ -677,6 +686,11 @@ var bindingTypes;
                     for (var k = 0; k < this.children.length; k++) {
                         var el = this.children[k].cloneNode(true);
                         el.__scope__ = scope.values[i];
+                        el.__addedScope__ = {
+                            $index: i,
+                            $isFirst: i == 0,
+                            $isLast: i == scope.values.length - 1
+                        };
                         this.element.appendChild(el);
                     }
                     ;
@@ -835,9 +849,15 @@ var bindingTypes;
         RepeatBinding.prototype.run = function () {
             _super.prototype.run.call(this);
             this.removeChildren();
-            for (var i = 0; i < this.expression.value; i++) {
+            var times = this.expression.value;
+            for (var i = 0; i < times; i++) {
                 for (var k = 0; k < this.children.length; k++) {
                     var el = this.children[k].cloneNode(true);
+                    el.__addedScope__ = {
+                        $index: i,
+                        $isFirst: i == 0,
+                        $isLast: i == times - 1
+                    };
                     this.element.appendChild(el);
                 }
                 ;

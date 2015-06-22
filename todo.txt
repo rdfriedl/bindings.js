@@ -4,4 +4,3 @@
 - improve expression.run
 - add inline bindigns
 - add comment bindings
-- allow elements to have aditional scopes for the eval function

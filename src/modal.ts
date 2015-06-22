@@ -33,6 +33,7 @@ module bindings{
 				element.__bindings__ = [];
 			}
 			element.__scope__ = scope;
+			element.__addedScope__ = element.__addedScope__ || {};
 			var data = this.parseBindings(element);
 			element.__bindings__ = data;
 
@@ -43,6 +44,7 @@ module bindings{
 				for (var i = 0; i < element.children.length; i++) {
 					var child: HTMLElement = <HTMLElement>element.children[i];
 					child.__scope__ = child.__scope__ || scope;
+					child.__addedScope__ = child.__addedScope__ || element.__addedScope__;
 					this.buildBindings(child,child.__scope__);
 					bindingsCreated = bindingsCreated.concat(child.__bindings__);
 				};

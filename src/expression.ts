@@ -1,12 +1,12 @@
 /// <reference path="bindings.ts" />
 
 module bindings{
-	export class expression{
+	export class Expression{
 		public success: boolean = true;
 		public value: any = undefined;
 		public dependencies: any[] = [];
 
-		constructor(public attr:Attr,public scope:bindings.Scope){
+		constructor(public element: HTMLElement, public attr:Attr, public scope:bindings.Scope){
 
 		}
 
@@ -15,18 +15,21 @@ module bindings{
 				value: undefined,
 				success: true,
 			}
-			var addedScope: any = {
+			var variables: any = {
 				$modal: (this.scope.modal)? this.scope.modal.scope.object : undefined,
 			};
 
-			var funcString: string = 'new Function("addedScope","', args = [];
+			var funcString: string = 'new Function("variables","addedScope","', args = [];
 			var context = this.buildContext(this.scope).context;
-			args.push(addedScope);
+			args.push(variables);
+			args.push(this.element.__addedScope__ || {});
 
 			funcString += 'with(this){';
+			funcString += 'with(variables){';
 			funcString += 'with(addedScope){';
 			funcString += 'return ';
 			funcString += this.attr.value;
+			funcString += '}';
 			funcString += '}';
 			funcString += '}';
 			funcString += '")';
@@ -73,14 +76,15 @@ module bindings{
 				eval: bindings.noop
 			}
 
-			var addedScope:any = {
+			var variables:any = {
 				$modal: (this.scope.modal)? this.buildContext(this.scope.modal.scope,data) : undefined,
 			};
 
-			var funcString: string = 'new Function("hidden","addedScope",', args: any[] = [];
+			var funcString: string = 'new Function("hidden","variables","addedScope",', args: any[] = [];
 
 			args.push(hidden);
-			args.push(addedScope);
+			args.push(variables);
+			args.push(this.element.__addedScope__ || {});
 
 			//build context
 			var context = this.buildContext(this.scope,data,true);
@@ -88,9 +92,11 @@ module bindings{
 			funcString += '"';
 			funcString += 'with(this){';
 			funcString += 'with(hidden){';
+			funcString += 'with(variables){';
 			funcString += 'with(addedScope){';
 			funcString += 'return ';
 			funcString += this.attr.value;
+			funcString += '}';
 			funcString += '}';
 			funcString += '}';
 			funcString += '}';

@@ -87,4 +87,5 @@ interface ObjectConstructor  {
 interface HTMLElement{
 	__scope__: bindings.Scope;
 	__bindings__: bindings.Binding[];
+	__addedScope__: any;
 }

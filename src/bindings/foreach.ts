@@ -40,6 +40,11 @@ module bindingTypes{
 					for (var k = 0; k < this.children.length; k++) {
 						var el: HTMLElement = <HTMLElement> this.children[k].cloneNode(true);
 						el.__scope__ = scope.values[i];
+						el.__addedScope__ = {
+							$index: i,
+							$isFirst: i==0,
+							$isLast: i==scope.values.length-1
+						}
 						this.element.appendChild(el)
 					};
 				};

@@ -3,14 +3,14 @@
 module bindings{
 	export class Binding {
 		public static id: string = '';
-		public expression: bindings.expression;
+		public expression: bindings.Expression;
 
 		public get scope(){
 			return this.element.__scope__;
 		}
 
 		constructor(public element: HTMLElement, public attr: Attr) {
-			this.expression = new bindings.expression(attr, this.scope);
+			this.expression = new bindings.Expression(element, attr, this.scope);
 		}
 
 		public run(){

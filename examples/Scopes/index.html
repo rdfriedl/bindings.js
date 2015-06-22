@@ -20,7 +20,7 @@
 		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
 
 		<!-- binding lib -->
-		<script type="text/javascript" src="../../dist/bindings.js"></script>
+		<script type="text/javascript" src="../../dist/bindings.min.js"></script>
 	</head>
 	<body>
 		<a href="../">< back</a>
@@ -46,13 +46,20 @@
 			<div>
 				<p>name: <span bind-text="name"></span></p>
 				<p>price: <span bind-text="price"></span></p>
+				<p>$index: <span bind-text="$index"></span></p>
+				<p>$isFirst: <span bind-text="$isFirst"></span></p>
+				<p>$isLast: <span bind-text="$isLast"></span></p>
 			</div>
 		</div>
 
 		<p>List (using <i>bind-repeat</i>)</p>
-		<ul bind-repeat="2">
-			<li>item</li>
-		</ul>
+		<div bind-repeat="2">
+			<div>
+				<p>$index: <span bind-text="$index"></span></p>
+				<p>$isFirst: <span bind-text="$isFirst"></span></p>
+				<p>$isLast: <span bind-text="$isLast"></span></p>
+			</div>
+		</div>
 
 		<p>Parent</p>
 		<div bind-with="profile">

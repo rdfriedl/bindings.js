@@ -33,9 +33,15 @@ module bindingTypes{
 			super.run();
 			this.removeChildren();
 
-			for (var i = 0; i < this.expression.value; i++) {
+			var times = this.expression.value;
+			for (var i = 0; i < times; i++) {
 				for (var k = 0; k < this.children.length; k++) {
 					var el: HTMLElement = <HTMLElement> this.children[k].cloneNode(true);
+					el.__addedScope__ = {
+						$index: i,
+						$isFirst: i==0,
+						$isLast: i==times-1
+					}
 					this.element.appendChild(el)
 				};
 			};
