@@ -44,11 +44,19 @@ var EventEmiter = (function () {
 var bindings;
 (function (bindings) {
     var Modal = (function () {
-        function Modal(object, element) {
+        function Modal(object, options, element) {
+            if (options === void 0) { options = {}; }
+            if (element === void 0) { element = document.body; }
             this.object = object;
             this.element = element;
             this.bindings = [];
+            this.options = {
+                prefix: 'bind'
+            };
             this.scope = new bindings.Scope('', object, this);
+            for (var i in options) {
+                this.options[i] = options[i];
+            }
         }
         Modal.prototype.applyBindings = function (element) {
             if (element === void 0) { element = undefined; }
@@ -98,8 +106,8 @@ var bindings;
                 var attr = attrs.item(i);
                 var type = attr.name;
                 //find the binding attrs and extract the src
-                if (type.search('bind-') == 0) {
-                    type = type.substr(type.indexOf('-') + 1, type.length);
+                if (type.indexOf(this.options.prefix.toLowerCase() + '-') == 0) {
+                    type = type.replace(this.options.prefix.toLowerCase() + '-', '');
                     var binding = bindingTypes.createBinding(type, element, attr);
                     if (binding) {
                         bindingsCreated.push(binding);
@@ -1060,6 +1068,34 @@ var bindingTypes;
     })(bindings.OneWayBinding);
     bindingTypes.SrcBinding = SrcBinding;
 })(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+//bind-value
+var bindingTypes;
+(function (bindingTypes) {
+    var InputBinding = (function (_super) {
+        __extends(InputBinding, _super);
+        function InputBinding(element, attr) {
+            _super.call(this, element, attr);
+            this.element = element;
+            this.domEvents = ['input'];
+            this.updateEvents();
+        }
+        InputBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            this.element.value = this.expression.value;
+        };
+        InputBinding.prototype.change = function (event) {
+            _super.prototype.change.call(this, event);
+            var value = this.expression.runOnScope().value;
+            if (value instanceof bindings.Value) {
+                value.updateValue(this.element.value);
+            }
+        };
+        InputBinding.id = 'input';
+        return InputBinding;
+    })(bindings.TwoWayBinding);
+    bindingTypes.InputBinding = InputBinding;
+})(bindingTypes || (bindingTypes = {}));
 /// <reference path="eventEmiter.ts" />
 /// <reference path="modal.ts" />
 /// <reference path="scope.ts" />
@@ -1083,16 +1119,15 @@ var bindingTypes;
 /// <reference path="bindings/visible.ts" />
 /// <reference path="bindings/href.ts" />
 /// <reference path="bindings/src.ts" />
+/// <reference path="bindings/input.ts" />
 var bindings;
 (function (bindings) {
-    function createModal(object, element) {
+    function createModal(object, options) {
         if (object === void 0) { object = {}; }
-        if (element === void 0) { element = document; }
-        if (element instanceof Document)
-            element = element.body;
-        var modal = new bindings.Modal(object, element);
+        if (options === void 0) { options = {}; }
+        var modal = new bindings.Modal(object, options);
         object._bindings = modal;
-        return object;
+        return modal;
     }
     bindings.createModal = createModal;
     function applyBindings(modal, element) {

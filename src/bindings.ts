@@ -11,7 +11,6 @@
 /// <reference path="bindings/foreach.ts" />
 /// <reference path="bindings/if.ts" />
 /// <reference path="bindings/ifnot.ts" />
-/// <reference path="bindings/live-update.ts" />
 /// <reference path="bindings/repeat.ts" />
 /// <reference path="bindings/submit.ts" />
 /// <reference path="bindings/text.ts" />
@@ -21,16 +20,15 @@
 /// <reference path="bindings/visible.ts" />
 /// <reference path="bindings/href.ts" />
 /// <reference path="bindings/src.ts" />
+/// <reference path="bindings/input.ts" />
 
 module bindings {
-	export function createModal(object:any = {},element:any = document){
-		if (element instanceof Document) element = element.body;
-
-		var modal: bindings.Modal = new bindings.Modal(object, element);
+	export function createModal(object:any = {},options:any = {}){
+		var modal: bindings.Modal = new bindings.Modal(object, options);
 
 		object._bindings = modal;
 
-		return object;
+		return modal;
 	}
 	export function applyBindings(modal:any = {},element:any = document): void{
 		if (element instanceof Document) element = element.body;

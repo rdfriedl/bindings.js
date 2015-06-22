@@ -4,9 +4,15 @@ module bindings{
 	export class Modal {
 		public scope: bindings.Scope;
 		public bindings: bindings.Binding[] = [];
+		public options: any = {
+			prefix: 'bind'
+		};
 
-		constructor(public object:Object,public element:HTMLElement){
+		constructor(public object:Object, options:any = {}, public element:HTMLElement = document.body){
 			this.scope = new bindings.Scope('', object, this);
+			for(var i in options){
+				this.options[i] = options[i];
+			}
 		}
 
 		public applyBindings(element:HTMLElement = undefined){
@@ -60,8 +66,8 @@ module bindings{
 				var attr: Attr = <Attr>attrs.item(i);
 				var type:string = attr.name;
 				//find the binding attrs and extract the src
-				if(type.search('bind-') == 0){
-					type = type.substr(type.indexOf('-')+1,type.length);
+				if(type.indexOf(this.options.prefix.toLowerCase()+'-') == 0){
+					type = type.replace(this.options.prefix.toLowerCase()+'-','');
 
 					var binding: bindings.Binding = bindingTypes.createBinding(type, element, attr);
 					if(binding){

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title customPrefix-text="'Bindings - '+title"></title>
+
+		<style type="text/css">
+			div{
+				border: 1px solid black;
+				padding: 10px;
+			}
+			p{
+				margin: 0px;
+			}
+			body>p{
+				margin-top: 20px;
+			}
+		</style>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
+
+		<!-- binding lib -->
+		<script type="text/javascript" src="../../dist/bindings.js"></script>
+	</head>
+	<body>
+		<a href="../">< back</a>
+
+		<h1>customPrefix-with</h1>
+		
+		<p>Profile</p>
+		<div>
+			<p>name: <span customPrefix-text="profile.name"></span></p>
+			<p>email: <span customPrefix-text="profile.email"></span></p>
+		</div>
+
+		<p>Profile (using <i>customPrefix-with</i>)</p>
+		<div customPrefix-with="profile">
+			<p>name: <span customPrefix-text="name"></span></p>
+			<p>email: <span customPrefix-text="email"></span></p>
+		</div>
+
+		<h1>customPrefix-foreach</h1>
+
+		<p>List (using <i>customPrefix-foreach</i>)</p>
+		<div customPrefix-foreach="items">
+			<div>
+				<p>name: <span customPrefix-text="name"></span></p>
+				<p>price: <span customPrefix-text="price"></span></p>
+				<p>$index: <span customPrefix-text="$index"></span></p>
+				<p>$isFirst: <span customPrefix-text="$isFirst"></span></p>
+				<p>$isLast: <span customPrefix-text="$isLast"></span></p>
+			</div>
+		</div>
+
+		<p>List (using <i>customPrefix-repeat</i>)</p>
+		<div customPrefix-repeat="2">
+			<div>
+				<p>$index: <span customPrefix-text="$index"></span></p>
+				<p>$isFirst: <span customPrefix-text="$isFirst"></span></p>
+				<p>$isLast: <span customPrefix-text="$isLast"></span></p>
+			</div>
+		</div>
+
+		<p>Parent</p>
+		<div customPrefix-with="profile">
+			<span customPrefix-text="$parent.title"></span> <i><small>$parent.title</small></i>
+		</div>
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'Scopes',
+				items: [
+					{
+						name: 'apple',
+						price: '$2'
+					},
+					{
+						name: 'ornage',
+						price: '$2.50'
+					},
+					{
+						name: 'lemond',
+						price: '$1.85'
+					}
+				],
+				profile: {
+					title: 'profile',
+					email: 'someone@something.com',
+					name: 'dude'
+				}
+			}
+
+			bindings.createModal(myModal,{
+				prefix: 'customPrefix'
+			});
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>
