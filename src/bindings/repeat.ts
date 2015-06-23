@@ -6,11 +6,11 @@ module bindingTypes{
 		public static id: string = 'repeat';
 		private children: HTMLElement[] = [];
 
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
-			for (var i = 0; i < this.element.children.length; i++){
-				this.children.push(<HTMLElement> this.element.children[i]);
+			for (var i = 0; i < this.node.children.length; i++){
+				this.children.push(<HTMLElement> this.node.children[i]);
 			}
 			this.removeChildren();
 
@@ -19,13 +19,13 @@ module bindingTypes{
 
 		private restoreChildren(){
 			for(var i in this.children){
-				this.element.appendChild(this.children[i]);
+				this.node.appendChild(this.children[i]);
 			}
 		}
 
 		private removeChildren(){
-			while (this.element.children.length !== 0) {
-			    this.element.removeChild(this.element.children[0]);
+			while (this.node.children.length !== 0) {
+			    this.node.removeChild(this.node.children[0]);
 			}
 		}
 
@@ -42,7 +42,7 @@ module bindingTypes{
 						$isFirst: i==0,
 						$isLast: i==times-1
 					}
-					this.element.appendChild(el)
+					this.node.appendChild(el)
 				};
 			};
 		}

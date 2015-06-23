@@ -4,13 +4,14 @@ module bindings{
 	export class Binding {
 		public static id: string = '';
 		public expression: bindings.Expression;
+		public node: Node;
 
 		public get scope(){
-			return this.element.__scope__;
+			return this.node.__scope__;
 		}
 
-		constructor(public element: HTMLElement, public attr: Attr) {
-			this.expression = new bindings.Expression(element, attr, this.scope);
+		constructor() {
+
 		}
 
 		public run(){
@@ -23,19 +24,31 @@ module bindings{
 	}
 	export class OneWayBinding extends bindings.Binding{
 		private dependencies: any[] = []; //a list of scopes and values this bindings uses
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		private updateDependenciesOnChange: boolean = false;
+		constructor(public node: HTMLElement, attr: Attr){
+			super();
+			this.expression = new bindings.Expression(node, attr.value, this.scope);
 
 			this.updateDependencies();
 		}
 
 		public dependencyChange(){
+			if(this.updateDependenciesOnChange){
+				// this.updateDependencies(); todo: for some reason this freezes the page...?
+			}
 			this.run();
 		}
 
 		public run(){
 			super.run();
 			this.expression.run();
+
+			if(this.dependencies.length == 0){
+				//failed to get any dependencies, listen on scope for changes
+				this.dependencies.push(this.scope);
+				this.bindDependencies();
+				this.updateDependenciesOnChange = true; //when dependecies change update them
+			}
 		}
 
 		public unbind(){ //remove every thing
@@ -51,8 +64,8 @@ module bindings{
 		}
 
 		public updateDependencies(){
-			this.getDependencies(true);
 			this.unbindDependencies();
+			this.getDependencies(true);
 			this.bindDependencies();
 		}
 
@@ -71,14 +84,14 @@ module bindings{
 	export class TwoWayBinding extends bindings.OneWayBinding{
 		public domEvents: string[] = []; //add events to this list to bind to them
 		private dontUpdate: boolean = false;
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
 			this.bindEvents();
 		}
 
 		public change(event:Event){
-			this.dontUpdate = true; //dont update (call this.run) the element
+			this.dontUpdate = true; //dont update (call this.run) the node
 		}
 
 		public dependencyChange(){
@@ -101,21 +114,22 @@ module bindings{
 
 		public bindEvents(){
 			for (var i = 0; i < this.domEvents.length; i++){
-				this.element.addEventListener(this.domEvents[i], this.change.bind(this));
+				this.node.addEventListener(this.domEvents[i], this.change.bind(this));
 			}
 		}
 
 		public unbindEvents(){
 			for (var i = 0; i < this.domEvents.length; i++){
-				this.element.removeEventListener(this.domEvents[i], this.change.bind(this));
+				this.node.removeEventListener(this.domEvents[i], this.change.bind(this));
 			}
 		}
 	}
 	export class EventBinding extends bindings.Binding{
 		public domEvents: string[] = [];
 
-		constructor(public element: HTMLElement, public attr: Attr){
-			super(element, attr);
+		constructor(public node: HTMLElement, public attr: Attr){
+			super();
+			this.expression = new bindings.Expression(node, attr.value, this.scope);
 
 			this.bindEvents();
 		}
@@ -137,24 +151,95 @@ module bindings{
 
 		public bindEvents(){
 			for (var i = 0; i < this.domEvents.length; i++){
-				this.element.addEventListener(this.domEvents[i], this.change.bind(this));
+				this.node.addEventListener(this.domEvents[i], this.change.bind(this));
 			}
 		}
 
 		public unbindEvents(){
 			for (var i = 0; i < this.domEvents.length; i++){
-				this.element.removeEventListener(this.domEvents[i], this.change.bind(this));
+				this.node.removeEventListener(this.domEvents[i], this.change.bind(this));
+			}
+		}
+	}
+	export class InlineBinding extends bindings.Binding{
+		private dependencies: any[] = []; //a list of scopes and values this bindings uses
+		private updateDependenciesOnChange: boolean = false;
+		public expression: bindings.Expression;
+
+		public get scope(){
+			return this.node.__scope__;
+		}
+
+		constructor(public node: Node){
+			super();
+			this.expression = new bindings.Expression(node, <string> node.nodeValue, this.scope);
+			this.updateDependencies();
+			this.run() //todo: remove this and make it run the same way as the other bindings do
+		}
+
+		public dependencyChange(){
+			if(this.updateDependenciesOnChange){
+				// this.updateDependencies(); todo: for some reason this freezes the page...?
+			}
+			this.run();
+		}
+
+		public run(){
+			this.expression.run();
+
+			if(this.expression.success){
+				this.node.nodeValue = this.expression.value;
+			}
+			else{
+				this.node.nodeValue = this.expression.expression;
+			}
+
+			if(this.dependencies.length == 0){
+				//failed to get any dependencies, listen on scope for changes
+				this.dependencies.push(this.scope);
+				this.bindDependencies();
+				this.updateDependenciesOnChange = true; //when dependecies change update them
+			}
+		}
+
+		public unbind(){ //remove every thing
+			this.unbindDependencies();
+		}
+
+		public getDependencies(refresh: boolean = false): any[]{
+			if(refresh || this.dependencies == undefined){
+				//get dependencies
+				this.dependencies = this.expression.getDependencies().requires;
+			}
+			return this.dependencies;
+		}
+
+		public updateDependencies(){
+			this.unbindDependencies();
+			this.getDependencies(true);
+			this.bindDependencies();
+		}
+
+		public bindDependencies(){
+			for (var i: number = 0; i < this.dependencies.length; i++){
+				this.dependencies[i].on('change', this.dependencyChange.bind(this));
+			}
+		}
+
+		public unbindDependencies(){
+			for (var i: number = 0; i < this.dependencies.length; i++){
+				this.dependencies[i].off('change', this.dependencyChange.bind(this));
 			}
 		}
 	}
 }
 
 module bindingTypes{
-	export function createBinding(type:string,element:HTMLElement, attr:Attr): bindings.Binding{
+	export function createBinding(type:string, node:HTMLElement, attr:Attr): bindings.Binding{
 		var binding: bindings.Binding;
 		for(var i in this){
 			if(this[i].id == type){
-				binding = <bindings.Binding> new this[i](element, attr);
+				binding = <bindings.Binding> new this[i](node, attr);
 				break;
 			}
 		}

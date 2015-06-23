@@ -30,14 +30,12 @@ module bindings {
 
 		return modal;
 	}
-	export function applyBindings(modal:any = {},element:any = document): void{
-		if (element instanceof Document) element = element.body;
-
+	export function applyBindings(modal:any = {},node:any = document): void{
 		if(modal instanceof bindings.Modal){
-			modal.applyBindings(element)
+			modal.applyBindings(node)
 		}
 		else if(modal._bindings instanceof bindings.Modal){
-			modal._bindings.applyBindings(element)
+			modal._bindings.applyBindings(node)
 		}
 	}
 	export function duplicateObject(obj2:any,count:number = 20):Object{
@@ -75,6 +73,11 @@ module bindings {
 		}
 	}
 	export function noop():void{}
+	export function clone(obj){
+		if(typeof obj == 'object'){
+			return JSON.parse(JSON.stringify(obj));
+		}
+	}
 }
 
 interface ObjectConstructor  {
@@ -82,7 +85,7 @@ interface ObjectConstructor  {
 	observe(beingObserved: any, callback: (update: any) => any) : void;
 }
 
-interface HTMLElement{
+interface Node{
 	__scope__: bindings.Scope;
 	__bindings__: bindings.Binding[];
 	__addedScope__: any;

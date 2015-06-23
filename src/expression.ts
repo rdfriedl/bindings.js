@@ -6,7 +6,7 @@ module bindings{
 		public value: any = undefined;
 		public dependencies: any[] = [];
 
-		constructor(public element: HTMLElement, public attr:Attr, public scope:bindings.Scope){
+		constructor(public node: Node, public expression:any, public scope:bindings.Scope){
 
 		}
 
@@ -22,13 +22,13 @@ module bindings{
 			var funcString: string = 'new Function("variables","addedScope","', args = [];
 			var context = this.buildContext(this.scope).context;
 			args.push(variables);
-			args.push(this.element.__addedScope__ || {});
+			args.push(this.node.__addedScope__ || {});
 
 			funcString += 'with(this){';
 			funcString += 'with(variables){';
 			funcString += 'with(addedScope){';
 			funcString += 'return ';
-			funcString += this.attr.value;
+			funcString += this.expression;
 			funcString += '}';
 			funcString += '}';
 			funcString += '}';
@@ -84,7 +84,7 @@ module bindings{
 
 			args.push(hidden);
 			args.push(variables);
-			args.push(this.element.__addedScope__ || {});
+			args.push(this.node.__addedScope__ || {});
 
 			//build context
 			var context = this.buildContext(this.scope,data,true);
@@ -95,7 +95,7 @@ module bindings{
 			funcString += 'with(variables){';
 			funcString += 'with(addedScope){';
 			funcString += 'return ';
-			funcString += this.attr.value;
+			funcString += this.expression;
 			funcString += '}';
 			funcString += '}';
 			funcString += '}';

@@ -6,21 +6,21 @@ module bindingTypes{
 		public static id: string = 'text';
 		private oldText: string;
 
-		constructor(element:HTMLBRElement,attr: Attr){
-			super(element, attr);
+		constructor(node:HTMLBRElement,attr: Attr){
+			super(node, attr);
 			
-			this.oldText = this.element.textContent;
+			this.oldText = this.node.textContent;
 			this.run();
 		}
 
 		public run(){
 			super.run();
-			this.element.innerText = this.expression.value;
+			this.node.innerText = this.expression.value;
 		}
 
 		public unbind(){
 			super.unbind();
-			this.element.textContent = this.oldText;
+			this.node.textContent = this.oldText;
 		}
 	}
 }

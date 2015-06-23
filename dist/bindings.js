@@ -44,71 +44,94 @@ var EventEmiter = (function () {
 var bindings;
 (function (bindings) {
     var Modal = (function () {
-        function Modal(object, options, element) {
+        function Modal(object, options, node) {
             if (options === void 0) { options = {}; }
-            if (element === void 0) { element = document.body; }
+            if (node === void 0) { node = document.body; }
             this.object = object;
-            this.element = element;
+            this.node = node;
             this.bindings = [];
             this.options = {
-                prefix: 'bind'
+                prefix: 'bind',
+                inlineDelimiters: ['{', '}'],
+                inlineBinding: bindingTypes.TextBinding,
+                excludedElements: {
+                    script: true,
+                    link: true,
+                    meta: true,
+                    style: true
+                }
             };
             this.scope = new bindings.Scope('', object, this);
             for (var i in options) {
                 this.options[i] = options[i];
             }
         }
-        Modal.prototype.applyBindings = function (element) {
-            if (element === void 0) { element = undefined; }
+        Modal.prototype.applyBindings = function (node) {
+            if (node === void 0) { node = undefined; }
             //remove old event
-            this.element.removeEventListener('DOMNodeInserted', this.ElementChange.bind(this));
-            this.element.removeEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
-            if (element)
-                this.element = element;
+            this.node.removeEventListener('DOMNodeInserted', this.ElementChange.bind(this));
+            this.node.removeEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
+            if (node)
+                this.node = node;
             this.bindings = this.buildBindings();
-            this.element.addEventListener('DOMNodeInserted', this.ElementChange.bind(this));
-            this.element.addEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
+            this.node.addEventListener('DOMNodeInserted', this.ElementChange.bind(this));
+            this.node.addEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
         };
-        Modal.prototype.buildBindings = function (element, scope) {
-            if (element === void 0) { element = this.element; }
-            if (scope === void 0) { scope = element.__scope__ || this.scope; }
+        Modal.prototype.buildBindings = function (node, scope) {
+            if (node === void 0) { node = this.node; }
+            if (scope === void 0) { scope = node.__scope__ || this.scope; }
             var bindingsCreated = [];
+            if (node.nodeName.toLowerCase() in this.options.excludedElements)
+                return;
             //remove old bindings
-            if (element.__bindings__) {
-                for (var i = 0; i < element.__bindings__.length; i++) {
-                    element.__bindings__[i].unbind();
+            if (node.__bindings__) {
+                for (var i = 0; i < node.__bindings__.length; i++) {
+                    node.__bindings__[i].unbind();
                 }
                 ;
-                element.__bindings__ = [];
+                node.__bindings__ = [];
             }
-            element.__scope__ = scope;
-            element.__addedScope__ = element.__addedScope__ || {};
-            var data = this.parseBindings(element);
-            element.__bindings__ = data;
-            bindingsCreated = bindingsCreated.concat(element.__bindings__);
+            //set scope
+            node.__scope__ = scope;
+            node.__addedScope__ = node.__addedScope__ || {};
+            this.createBindings(node); //createBindings handles setting __bindings__
+            bindingsCreated = bindingsCreated.concat(node.__bindings__);
             //loop through and bind children
-            if (element.children) {
-                for (var i = 0; i < element.children.length; i++) {
-                    var child = element.children[i];
-                    child.__scope__ = child.__scope__ || scope;
-                    child.__addedScope__ = child.__addedScope__ || element.__addedScope__;
-                    this.buildBindings(child, child.__scope__);
-                    bindingsCreated = bindingsCreated.concat(child.__bindings__);
-                }
-                ;
+            for (var i = 0; i < node.childNodes.length; i++) {
+                var childNode = node.childNodes[i];
+                if (childNode.nodeName.toLowerCase() in this.options.excludedElements)
+                    continue;
+                //set scope
+                childNode.__scope__ = childNode.__scope__ || scope;
+                childNode.__addedScope__ = childNode.__addedScope__ || node.__addedScope__;
+                this.buildBindings(childNode, childNode.__scope__);
+                bindingsCreated = bindingsCreated.concat(childNode.__bindings__);
+            }
+            ;
+            return bindingsCreated;
+        };
+        Modal.prototype.createBindings = function (node) {
+            var bindingsCreated = [];
+            switch (node.nodeType) {
+                case node.ELEMENT_NODE:
+                    bindingsCreated = this.createAttrBindings(node);
+                    break;
+                case node.TEXT_NODE:
+                    bindingsCreated = this.createInlineBindings(node);
+                    break;
             }
             return bindingsCreated;
         };
-        Modal.prototype.parseBindings = function (element) {
+        Modal.prototype.createAttrBindings = function (node) {
             var bindingsCreated = [];
-            var attrs = element.attributes;
+            var attrs = node.attributes;
             for (var i = 0; i < attrs.length; i++) {
                 var attr = attrs.item(i);
                 var type = attr.name;
                 //find the binding attrs and extract the src
                 if (type.indexOf(this.options.prefix.toLowerCase() + '-') == 0) {
                     type = type.replace(this.options.prefix.toLowerCase() + '-', '');
-                    var binding = bindingTypes.createBinding(type, element, attr);
+                    var binding = bindingTypes.createBinding(type, node, attr);
                     if (binding) {
                         bindingsCreated.push(binding);
                     }
@@ -118,7 +141,75 @@ var bindings;
                 }
             }
             ;
+            node.__bindings__ = bindingsCreated;
             return bindingsCreated;
+        };
+        Modal.prototype.createInlineBindings = function (node) {
+            var bindingsCreated = [];
+            var tokens = this.parseInlineBindings(node.nodeValue, this.options.inlineDelimiters);
+            if (!(tokens.length === 1 && tokens[0].type === 'text')) {
+                for (var i = 0; i < tokens.length; i++) {
+                    var token = tokens[i];
+                    var textNode = document.createTextNode(token.value);
+                    //copy scopes
+                    // textNode.__bindings__ = bindings.clone(node.__bindings__); dont clone the bindings array because no two nodes should have the same bindigns
+                    textNode.__bindings__ = [];
+                    textNode.__scope__ = node.__scope__;
+                    textNode.__addedScope__ = bindings.clone(node.__addedScope__);
+                    node.parentNode.insertBefore(textNode, node);
+                    if (token.type === 'binding') {
+                        var b = new bindings.InlineBinding(textNode);
+                        textNode.__bindings__ = [b];
+                        bindingsCreated.push(b);
+                    }
+                }
+                node.parentNode.removeChild(node);
+            }
+            return bindingsCreated;
+        };
+        Modal.prototype.parseInlineBindings = function (template, delimiters) {
+            var index = 0, lastIndex = 0, lastToken, length = template.length, substring, tokens = [], value;
+            while (lastIndex < length) {
+                index = template.indexOf(delimiters[0], lastIndex);
+                if (index < 0) {
+                    tokens.push({
+                        type: 'text',
+                        value: template.slice(lastIndex)
+                    });
+                    break;
+                }
+                else {
+                    if (index > 0 && lastIndex < index) {
+                        tokens.push({
+                            type: 'text',
+                            value: template.slice(lastIndex, index)
+                        });
+                    }
+                    lastIndex = index + delimiters[0].length;
+                    index = template.indexOf(delimiters[1], lastIndex);
+                    if (index < 0) {
+                        substring = template.slice(lastIndex - delimiters[1].length);
+                        lastToken = tokens[tokens.length - 1];
+                        if ((lastToken != null ? lastToken.type : void 0) === 'text') {
+                            lastToken.value += substring;
+                        }
+                        else {
+                            tokens.push({
+                                type: 'text',
+                                value: substring
+                            });
+                        }
+                        break;
+                    }
+                    value = template.slice(lastIndex, index).trim();
+                    tokens.push({
+                        type: 'binding',
+                        value: value
+                    });
+                    lastIndex = index + delimiters[1].length;
+                }
+            }
+            return tokens;
         };
         Modal.prototype.ElementChange = function (event) {
             event.stopPropagation();
@@ -283,14 +374,11 @@ var bindings;
 var bindings;
 (function (bindings) {
     var Binding = (function () {
-        function Binding(element, attr) {
-            this.element = element;
-            this.attr = attr;
-            this.expression = new bindings.Expression(element, attr, this.scope);
+        function Binding() {
         }
         Object.defineProperty(Binding.prototype, "scope", {
             get: function () {
-                return this.element.__scope__;
+                return this.node.__scope__;
             },
             enumerable: true,
             configurable: true
@@ -305,17 +393,28 @@ var bindings;
     bindings.Binding = Binding;
     var OneWayBinding = (function (_super) {
         __extends(OneWayBinding, _super);
-        function OneWayBinding(element, attr) {
-            _super.call(this, element, attr);
+        function OneWayBinding(node, attr) {
+            _super.call(this);
+            this.node = node;
             this.dependencies = []; //a list of scopes and values this bindings uses
+            this.updateDependenciesOnChange = false;
+            this.expression = new bindings.Expression(node, attr.value, this.scope);
             this.updateDependencies();
         }
         OneWayBinding.prototype.dependencyChange = function () {
+            if (this.updateDependenciesOnChange) {
+            }
             this.run();
         };
         OneWayBinding.prototype.run = function () {
             _super.prototype.run.call(this);
             this.expression.run();
+            if (this.dependencies.length == 0) {
+                //failed to get any dependencies, listen on scope for changes
+                this.dependencies.push(this.scope);
+                this.bindDependencies();
+                this.updateDependenciesOnChange = true; //when dependecies change update them
+            }
         };
         OneWayBinding.prototype.unbind = function () {
             this.unbindDependencies();
@@ -329,8 +428,8 @@ var bindings;
             return this.dependencies;
         };
         OneWayBinding.prototype.updateDependencies = function () {
-            this.getDependencies(true);
             this.unbindDependencies();
+            this.getDependencies(true);
             this.bindDependencies();
         };
         OneWayBinding.prototype.bindDependencies = function () {
@@ -348,14 +447,14 @@ var bindings;
     bindings.OneWayBinding = OneWayBinding;
     var TwoWayBinding = (function (_super) {
         __extends(TwoWayBinding, _super);
-        function TwoWayBinding(element, attr) {
-            _super.call(this, element, attr);
+        function TwoWayBinding(node, attr) {
+            _super.call(this, node, attr);
             this.domEvents = []; //add events to this list to bind to them
             this.dontUpdate = false;
             this.bindEvents();
         }
         TwoWayBinding.prototype.change = function (event) {
-            this.dontUpdate = true; //dont update (call this.run) the element
+            this.dontUpdate = true; //dont update (call this.run) the node
         };
         TwoWayBinding.prototype.dependencyChange = function () {
             if (!this.dontUpdate) {
@@ -373,12 +472,12 @@ var bindings;
         };
         TwoWayBinding.prototype.bindEvents = function () {
             for (var i = 0; i < this.domEvents.length; i++) {
-                this.element.addEventListener(this.domEvents[i], this.change.bind(this));
+                this.node.addEventListener(this.domEvents[i], this.change.bind(this));
             }
         };
         TwoWayBinding.prototype.unbindEvents = function () {
             for (var i = 0; i < this.domEvents.length; i++) {
-                this.element.removeEventListener(this.domEvents[i], this.change.bind(this));
+                this.node.removeEventListener(this.domEvents[i], this.change.bind(this));
             }
         };
         return TwoWayBinding;
@@ -386,11 +485,12 @@ var bindings;
     bindings.TwoWayBinding = TwoWayBinding;
     var EventBinding = (function (_super) {
         __extends(EventBinding, _super);
-        function EventBinding(element, attr) {
-            _super.call(this, element, attr);
-            this.element = element;
+        function EventBinding(node, attr) {
+            _super.call(this);
+            this.node = node;
             this.attr = attr;
             this.domEvents = [];
+            this.expression = new bindings.Expression(node, attr.value, this.scope);
             this.bindEvents();
         }
         EventBinding.prototype.change = function (event) {
@@ -406,25 +506,92 @@ var bindings;
         };
         EventBinding.prototype.bindEvents = function () {
             for (var i = 0; i < this.domEvents.length; i++) {
-                this.element.addEventListener(this.domEvents[i], this.change.bind(this));
+                this.node.addEventListener(this.domEvents[i], this.change.bind(this));
             }
         };
         EventBinding.prototype.unbindEvents = function () {
             for (var i = 0; i < this.domEvents.length; i++) {
-                this.element.removeEventListener(this.domEvents[i], this.change.bind(this));
+                this.node.removeEventListener(this.domEvents[i], this.change.bind(this));
             }
         };
         return EventBinding;
     })(bindings.Binding);
     bindings.EventBinding = EventBinding;
+    var InlineBinding = (function (_super) {
+        __extends(InlineBinding, _super);
+        function InlineBinding(node) {
+            _super.call(this);
+            this.node = node;
+            this.dependencies = []; //a list of scopes and values this bindings uses
+            this.updateDependenciesOnChange = false;
+            this.expression = new bindings.Expression(node, node.nodeValue, this.scope);
+            this.updateDependencies();
+            this.run(); //todo: remove this and make it run the same way as the other bindings do
+        }
+        Object.defineProperty(InlineBinding.prototype, "scope", {
+            get: function () {
+                return this.node.__scope__;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        InlineBinding.prototype.dependencyChange = function () {
+            if (this.updateDependenciesOnChange) {
+            }
+            this.run();
+        };
+        InlineBinding.prototype.run = function () {
+            this.expression.run();
+            if (this.expression.success) {
+                this.node.nodeValue = this.expression.value;
+            }
+            else {
+                this.node.nodeValue = this.expression.expression;
+            }
+            if (this.dependencies.length == 0) {
+                //failed to get any dependencies, listen on scope for changes
+                this.dependencies.push(this.scope);
+                this.bindDependencies();
+                this.updateDependenciesOnChange = true; //when dependecies change update them
+            }
+        };
+        InlineBinding.prototype.unbind = function () {
+            this.unbindDependencies();
+        };
+        InlineBinding.prototype.getDependencies = function (refresh) {
+            if (refresh === void 0) { refresh = false; }
+            if (refresh || this.dependencies == undefined) {
+                //get dependencies
+                this.dependencies = this.expression.getDependencies().requires;
+            }
+            return this.dependencies;
+        };
+        InlineBinding.prototype.updateDependencies = function () {
+            this.unbindDependencies();
+            this.getDependencies(true);
+            this.bindDependencies();
+        };
+        InlineBinding.prototype.bindDependencies = function () {
+            for (var i = 0; i < this.dependencies.length; i++) {
+                this.dependencies[i].on('change', this.dependencyChange.bind(this));
+            }
+        };
+        InlineBinding.prototype.unbindDependencies = function () {
+            for (var i = 0; i < this.dependencies.length; i++) {
+                this.dependencies[i].off('change', this.dependencyChange.bind(this));
+            }
+        };
+        return InlineBinding;
+    })(bindings.Binding);
+    bindings.InlineBinding = InlineBinding;
 })(bindings || (bindings = {}));
 var bindingTypes;
 (function (bindingTypes) {
-    function createBinding(type, element, attr) {
+    function createBinding(type, node, attr) {
         var binding;
         for (var i in this) {
             if (this[i].id == type) {
-                binding = new this[i](element, attr);
+                binding = new this[i](node, attr);
                 break;
             }
         }
@@ -436,9 +603,9 @@ var bindingTypes;
 var bindings;
 (function (bindings) {
     var Expression = (function () {
-        function Expression(element, attr, scope) {
-            this.element = element;
-            this.attr = attr;
+        function Expression(node, expression, scope) {
+            this.node = node;
+            this.expression = expression;
             this.scope = scope;
             this.success = true;
             this.value = undefined;
@@ -455,12 +622,12 @@ var bindings;
             var funcString = 'new Function("variables","addedScope","', args = [];
             var context = this.buildContext(this.scope).context;
             args.push(variables);
-            args.push(this.element.__addedScope__ || {});
+            args.push(this.node.__addedScope__ || {});
             funcString += 'with(this){';
             funcString += 'with(variables){';
             funcString += 'with(addedScope){';
             funcString += 'return ';
-            funcString += this.attr.value;
+            funcString += this.expression;
             funcString += '}';
             funcString += '}';
             funcString += '}';
@@ -508,7 +675,7 @@ var bindings;
             var funcString = 'new Function("hidden","variables","addedScope",', args = [];
             args.push(hidden);
             args.push(variables);
-            args.push(this.element.__addedScope__ || {});
+            args.push(this.node.__addedScope__ || {});
             //build context
             var context = this.buildContext(this.scope, data, true);
             funcString += '"';
@@ -517,7 +684,7 @@ var bindings;
             funcString += 'with(variables){';
             funcString += 'with(addedScope){';
             funcString += 'return ';
-            funcString += this.attr.value;
+            funcString += this.expression;
             funcString += '}';
             funcString += '}';
             funcString += '}';
@@ -602,8 +769,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var ClickBinding = (function (_super) {
         __extends(ClickBinding, _super);
-        function ClickBinding(element, attr) {
-            _super.call(this, element, attr);
+        function ClickBinding(node, attr) {
+            _super.call(this, node, attr);
             this.domEvents = ['click'];
             this.updateEvents();
         }
@@ -618,17 +785,17 @@ var bindingTypes;
 (function (bindingTypes) {
     var EnabledBinding = (function (_super) {
         __extends(EnabledBinding, _super);
-        function EnabledBinding(element, attr) {
-            _super.call(this, element, attr);
+        function EnabledBinding(node, attr) {
+            _super.call(this, node, attr);
             this.run();
         }
         EnabledBinding.prototype.run = function () {
             _super.prototype.run.call(this);
             if (this.expression.value) {
-                this.element.removeAttribute('disabled');
+                this.node.removeAttribute('disabled');
             }
             else {
-                this.element.setAttribute('disabled', 'disabled');
+                this.node.setAttribute('disabled', 'disabled');
             }
         };
         EnabledBinding.id = 'enabled';
@@ -642,17 +809,17 @@ var bindingTypes;
 (function (bindingTypes) {
     var DisabledBinding = (function (_super) {
         __extends(DisabledBinding, _super);
-        function DisabledBinding(element, attr) {
-            _super.call(this, element, attr);
+        function DisabledBinding(node, attr) {
+            _super.call(this, node, attr);
             this.run();
         }
         DisabledBinding.prototype.run = function () {
             _super.prototype.run.call(this);
             if (!this.expression.value) {
-                this.element.removeAttribute('disabled');
+                this.node.removeAttribute('disabled');
             }
             else {
-                this.element.setAttribute('disabled', 'disabled');
+                this.node.setAttribute('disabled', 'disabled');
             }
         };
         DisabledBinding.id = 'disabled';
@@ -666,23 +833,23 @@ var bindingTypes;
 (function (bindingTypes) {
     var ForEachBinding = (function (_super) {
         __extends(ForEachBinding, _super);
-        function ForEachBinding(element, attr) {
-            _super.call(this, element, attr);
+        function ForEachBinding(node, attr) {
+            _super.call(this, node, attr);
             this.children = [];
-            for (var i = 0; i < this.element.children.length; i++) {
-                this.children.push(this.element.children[i]);
+            for (var i = 0; i < this.node.children.length; i++) {
+                this.children.push(this.node.children[i]);
             }
             this.removeAllChildren();
             this.run();
         }
         ForEachBinding.prototype.restoreChildren = function () {
             for (var i in this.children) {
-                this.element.appendChild(this.children[i]);
+                this.node.appendChild(this.children[i]);
             }
         };
         ForEachBinding.prototype.removeAllChildren = function () {
-            while (this.element.children.length !== 0) {
-                this.element.removeChild(this.element.children[0]);
+            while (this.node.children.length !== 0) {
+                this.node.removeChild(this.node.children[0]);
             }
         };
         ForEachBinding.prototype.run = function () {
@@ -699,7 +866,7 @@ var bindingTypes;
                             $isFirst: i == 0,
                             $isLast: i == scope.values.length - 1
                         };
-                        this.element.appendChild(el);
+                        this.node.appendChild(el);
                     }
                     ;
                 }
@@ -725,22 +892,22 @@ var bindingTypes;
 (function (bindingTypes) {
     var IfBinding = (function (_super) {
         __extends(IfBinding, _super);
-        function IfBinding(element, attr) {
-            _super.call(this, element, attr);
+        function IfBinding(node, attr) {
+            _super.call(this, node, attr);
             this.children = [];
-            for (var i = 0; i < this.element.children.length; i++) {
-                this.children.push(this.element.children[i]);
+            for (var i = 0; i < this.node.children.length; i++) {
+                this.children.push(this.node.children[i]);
             }
             this.run();
         }
         IfBinding.prototype.restoreChildren = function () {
             for (var i in this.children) {
-                this.element.appendChild(this.children[i]);
+                this.node.appendChild(this.children[i]);
             }
         };
         IfBinding.prototype.removeChildren = function () {
-            while (this.element.children.length !== 0) {
-                this.element.removeChild(this.element.children[0]);
+            while (this.node.children.length !== 0) {
+                this.node.removeChild(this.node.children[0]);
             }
         };
         IfBinding.prototype.run = function () {
@@ -768,22 +935,22 @@ var bindingTypes;
 (function (bindingTypes) {
     var IfNotBinding = (function (_super) {
         __extends(IfNotBinding, _super);
-        function IfNotBinding(element, attr) {
-            _super.call(this, element, attr);
+        function IfNotBinding(node, attr) {
+            _super.call(this, node, attr);
             this.children = [];
-            for (var i = 0; i < this.element.children.length; i++) {
-                this.children.push(this.element.children[i]);
+            for (var i = 0; i < this.node.children.length; i++) {
+                this.children.push(this.node.children[i]);
             }
             this.run();
         }
         IfNotBinding.prototype.restoreChildren = function () {
             for (var i in this.children) {
-                this.element.appendChild(this.children[i]);
+                this.node.appendChild(this.children[i]);
             }
         };
         IfNotBinding.prototype.removeChildren = function () {
-            while (this.element.children.length !== 0) {
-                this.element.removeChild(this.element.children[0]);
+            while (this.node.children.length !== 0) {
+                this.node.removeChild(this.node.children[0]);
             }
         };
         IfNotBinding.prototype.run = function () {
@@ -806,52 +973,28 @@ var bindingTypes;
     bindingTypes.IfNotBinding = IfNotBinding;
 })(bindingTypes || (bindingTypes = {}));
 /// <reference path="../bindings.ts" />
-// bind-live-update
-var bindingTypes;
-(function (bindingTypes) {
-    var LiveUpdateBinding = (function (_super) {
-        __extends(LiveUpdateBinding, _super);
-        function LiveUpdateBinding(element, attr) {
-            _super.call(this, element, attr);
-            this.domEvents = ['input'];
-            this.updateEvents();
-        }
-        LiveUpdateBinding.prototype.change = function (event) {
-            //super.change(event); //dont run the expression because we dont have on
-            if ("createEvent" in document) {
-                var evt = document.createEvent("HTMLEvents");
-                evt.initEvent("change", false, true);
-                this.element.dispatchEvent(evt);
-            }
-        };
-        LiveUpdateBinding.id = 'live-update';
-        return LiveUpdateBinding;
-    })(bindings.EventBinding);
-    bindingTypes.LiveUpdateBinding = LiveUpdateBinding;
-})(bindingTypes || (bindingTypes = {}));
-/// <reference path="../bindings.ts" />
 // bind-repeat
 var bindingTypes;
 (function (bindingTypes) {
     var RepeatBinding = (function (_super) {
         __extends(RepeatBinding, _super);
-        function RepeatBinding(element, attr) {
-            _super.call(this, element, attr);
+        function RepeatBinding(node, attr) {
+            _super.call(this, node, attr);
             this.children = [];
-            for (var i = 0; i < this.element.children.length; i++) {
-                this.children.push(this.element.children[i]);
+            for (var i = 0; i < this.node.children.length; i++) {
+                this.children.push(this.node.children[i]);
             }
             this.removeChildren();
             this.run();
         }
         RepeatBinding.prototype.restoreChildren = function () {
             for (var i in this.children) {
-                this.element.appendChild(this.children[i]);
+                this.node.appendChild(this.children[i]);
             }
         };
         RepeatBinding.prototype.removeChildren = function () {
-            while (this.element.children.length !== 0) {
-                this.element.removeChild(this.element.children[0]);
+            while (this.node.children.length !== 0) {
+                this.node.removeChild(this.node.children[0]);
             }
         };
         RepeatBinding.prototype.run = function () {
@@ -866,7 +1009,7 @@ var bindingTypes;
                         $isFirst: i == 0,
                         $isLast: i == times - 1
                     };
-                    this.element.appendChild(el);
+                    this.node.appendChild(el);
                 }
                 ;
             }
@@ -888,8 +1031,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var SubmitBinding = (function (_super) {
         __extends(SubmitBinding, _super);
-        function SubmitBinding(element, attr) {
-            _super.call(this, element, attr);
+        function SubmitBinding(node, attr) {
+            _super.call(this, node, attr);
             this.domEvents = ['submit'];
             this.updateEvents();
         }
@@ -908,18 +1051,18 @@ var bindingTypes;
 (function (bindingTypes) {
     var TextBinding = (function (_super) {
         __extends(TextBinding, _super);
-        function TextBinding(element, attr) {
-            _super.call(this, element, attr);
-            this.oldText = this.element.textContent;
+        function TextBinding(node, attr) {
+            _super.call(this, node, attr);
+            this.oldText = this.node.textContent;
             this.run();
         }
         TextBinding.prototype.run = function () {
             _super.prototype.run.call(this);
-            this.element.innerText = this.expression.value;
+            this.node.innerText = this.expression.value;
         };
         TextBinding.prototype.unbind = function () {
             _super.prototype.unbind.call(this);
-            this.element.textContent = this.oldText;
+            this.node.textContent = this.oldText;
         };
         TextBinding.id = 'text';
         return TextBinding;
@@ -932,21 +1075,21 @@ var bindingTypes;
 (function (bindingTypes) {
     var ValueBinding = (function (_super) {
         __extends(ValueBinding, _super);
-        function ValueBinding(element, attr) {
-            _super.call(this, element, attr);
-            this.element = element;
+        function ValueBinding(node, attr) {
+            _super.call(this, node, attr);
+            this.node = node;
             this.domEvents = ['change'];
             this.updateEvents();
         }
         ValueBinding.prototype.run = function () {
             _super.prototype.run.call(this);
-            this.element.value = this.expression.value;
+            this.node.value = this.expression.value;
         };
         ValueBinding.prototype.change = function (event) {
             _super.prototype.change.call(this, event);
             var value = this.expression.runOnScope().value;
             if (value instanceof bindings.Value) {
-                value.updateValue(this.element.value);
+                value.updateValue(this.node.value);
             }
         };
         ValueBinding.id = 'value';
@@ -960,16 +1103,16 @@ var bindingTypes;
 (function (bindingTypes) {
     var WithBinding = (function (_super) {
         __extends(WithBinding, _super);
-        function WithBinding(element, attr) {
-            _super.call(this, element, attr);
+        function WithBinding(node, attr) {
+            _super.call(this, node, attr);
             this.run();
         }
         WithBinding.prototype.run = function () {
             // super.run(); dont run because we arnt going to use .run on are expression
             var scope = this.expression.runOnScope().value;
             if (scope instanceof bindings.Scope) {
-                for (var i = 0; i < this.element.children.length; i++) {
-                    var el = this.element.children[i];
+                for (var i = 0; i < this.node.children.length; i++) {
+                    var el = this.node.children[i];
                     el.__scope__ = scope;
                 }
             }
@@ -988,18 +1131,18 @@ var bindingTypes;
 (function (bindingTypes) {
     var HTMLBinding = (function (_super) {
         __extends(HTMLBinding, _super);
-        function HTMLBinding(element, attr) {
-            _super.call(this, element, attr);
-            this.oldText = this.element.textContent;
+        function HTMLBinding(node, attr) {
+            _super.call(this, node, attr);
+            this.oldText = this.node.textContent;
             this.run();
         }
         HTMLBinding.prototype.run = function () {
             _super.prototype.run.call(this);
-            this.element.innerHTML = this.expression.value;
+            this.node.innerHTML = this.expression.value;
         };
         HTMLBinding.prototype.unbind = function () {
             _super.prototype.unbind.call(this);
-            this.element.textContent = this.oldText;
+            this.node.textContent = this.oldText;
         };
         HTMLBinding.id = 'html';
         return HTMLBinding;
@@ -1012,17 +1155,17 @@ var bindingTypes;
 (function (bindingTypes) {
     var VisibleBinding = (function (_super) {
         __extends(VisibleBinding, _super);
-        function VisibleBinding(element, attr) {
-            _super.call(this, element, attr);
+        function VisibleBinding(node, attr) {
+            _super.call(this, node, attr);
             this.run();
         }
         VisibleBinding.prototype.run = function () {
             _super.prototype.run.call(this);
             if (this.expression.value) {
-                this.element.style.display = '';
+                this.node.style.display = '';
             }
             else {
-                this.element.style.display = 'none';
+                this.node.style.display = 'none';
             }
         };
         VisibleBinding.id = 'visible';
@@ -1036,13 +1179,13 @@ var bindingTypes;
 (function (bindingTypes) {
     var HrefBinding = (function (_super) {
         __extends(HrefBinding, _super);
-        function HrefBinding(element, attr) {
-            _super.call(this, element, attr);
+        function HrefBinding(node, attr) {
+            _super.call(this, node, attr);
             this.run();
         }
         HrefBinding.prototype.run = function () {
             _super.prototype.run.call(this);
-            this.element.setAttribute('href', this.expression.value);
+            this.node.setAttribute('href', this.expression.value);
         };
         HrefBinding.id = 'href';
         return HrefBinding;
@@ -1055,13 +1198,13 @@ var bindingTypes;
 (function (bindingTypes) {
     var SrcBinding = (function (_super) {
         __extends(SrcBinding, _super);
-        function SrcBinding(element, attr) {
-            _super.call(this, element, attr);
+        function SrcBinding(node, attr) {
+            _super.call(this, node, attr);
             this.run();
         }
         SrcBinding.prototype.run = function () {
             _super.prototype.run.call(this);
-            this.element.setAttribute('src', this.expression.value);
+            this.node.setAttribute('src', this.expression.value);
         };
         SrcBinding.id = 'src';
         return SrcBinding;
@@ -1074,21 +1217,21 @@ var bindingTypes;
 (function (bindingTypes) {
     var InputBinding = (function (_super) {
         __extends(InputBinding, _super);
-        function InputBinding(element, attr) {
-            _super.call(this, element, attr);
-            this.element = element;
+        function InputBinding(node, attr) {
+            _super.call(this, node, attr);
+            this.node = node;
             this.domEvents = ['input'];
             this.updateEvents();
         }
         InputBinding.prototype.run = function () {
             _super.prototype.run.call(this);
-            this.element.value = this.expression.value;
+            this.node.value = this.expression.value;
         };
         InputBinding.prototype.change = function (event) {
             _super.prototype.change.call(this, event);
             var value = this.expression.runOnScope().value;
             if (value instanceof bindings.Value) {
-                value.updateValue(this.element.value);
+                value.updateValue(this.node.value);
             }
         };
         InputBinding.id = 'input';
@@ -1109,7 +1252,6 @@ var bindingTypes;
 /// <reference path="bindings/foreach.ts" />
 /// <reference path="bindings/if.ts" />
 /// <reference path="bindings/ifnot.ts" />
-/// <reference path="bindings/live-update.ts" />
 /// <reference path="bindings/repeat.ts" />
 /// <reference path="bindings/submit.ts" />
 /// <reference path="bindings/text.ts" />
@@ -1130,16 +1272,14 @@ var bindings;
         return modal;
     }
     bindings.createModal = createModal;
-    function applyBindings(modal, element) {
+    function applyBindings(modal, node) {
         if (modal === void 0) { modal = {}; }
-        if (element === void 0) { element = document; }
-        if (element instanceof Document)
-            element = element.body;
+        if (node === void 0) { node = document; }
         if (modal instanceof bindings.Modal) {
-            modal.applyBindings(element);
+            modal.applyBindings(node);
         }
         else if (modal._bindings instanceof bindings.Modal) {
-            modal._bindings.applyBindings(element);
+            modal._bindings.applyBindings(node);
         }
     }
     bindings.applyBindings = applyBindings;
@@ -1182,5 +1322,11 @@ var bindings;
     bindings.duplicateObject = duplicateObject;
     function noop() { }
     bindings.noop = noop;
+    function clone(obj) {
+        if (typeof obj == 'object') {
+            return JSON.parse(JSON.stringify(obj));
+        }
+    }
+    bindings.clone = clone;
 })(bindings || (bindings = {}));
 //# sourceMappingURL=bindings.js.map

@@ -5,8 +5,8 @@ module bindingTypes{
 	export class WithBinding extends bindings.OneWayBinding{
 		public static id: string = 'with';
 
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
 			this.run();
 		}
@@ -16,8 +16,8 @@ module bindingTypes{
 			var scope: bindings.Scope = this.expression.runOnScope().value;
 
 			if(scope instanceof bindings.Scope){
-				for (var i = 0; i < this.element.children.length; i++){
-					var el: HTMLElement = <HTMLElement> this.element.children[i];
+				for (var i = 0; i < this.node.children.length; i++){
+					var el: HTMLElement = <HTMLElement> this.node.children[i];
 					el.__scope__ = scope;
 				}
 			}

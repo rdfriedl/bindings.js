@@ -5,8 +5,8 @@ module bindingTypes{
 	export class HrefBinding extends bindings.OneWayBinding{
 		public static id: string = 'href';
 
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
 			this.run();
 		}
@@ -14,7 +14,7 @@ module bindingTypes{
 		public run(){
 			super.run();
 			
-			this.element.setAttribute('href', this.expression.value);
+			this.node.setAttribute('href', this.expression.value);
 		}
 	}
 }

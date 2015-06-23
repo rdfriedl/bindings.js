@@ -2,5 +2,5 @@
 - fix bug where if the user uses a "&" or a "|" in there expression it will only bind to the first value ie. "array1.length > 0 && array2.length > 0" it will only bind to array1
 - fix bug with arrays, if you call array.push it dose not add an element to the array because its using a copy of the array
 - improve expression.run
-- add inline bindigns
 - add comment bindings
+- make sure bindings aren't run twice when binding

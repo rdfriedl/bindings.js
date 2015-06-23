@@ -5,8 +5,8 @@ module bindingTypes{
 	export class DisabledBinding extends bindings.OneWayBinding{
 		public static id: string = 'disabled';
 
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
 			this.run();
 		}
@@ -15,10 +15,10 @@ module bindingTypes{
 			super.run();
 			
 			if(!this.expression.value){
-				this.element.removeAttribute('disabled')
+				this.node.removeAttribute('disabled')
 			}
 			else{
-				this.element.setAttribute('disabled','disabled')
+				this.node.setAttribute('disabled','disabled')
 			}
 		}
 	}

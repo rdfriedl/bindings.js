@@ -4,8 +4,8 @@
 module bindingTypes{
 	export class SubmitBinding extends bindings.EventBinding{
 		public static id: string = 'submit';
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
 			this.domEvents = ['submit'];
 			this.updateEvents();

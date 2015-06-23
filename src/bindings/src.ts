@@ -5,8 +5,8 @@ module bindingTypes{
 	export class SrcBinding extends bindings.OneWayBinding{
 		public static id: string = 'src';
 
-		constructor(element: HTMLElement, attr: Attr){
-			super(element, attr);
+		constructor(node: HTMLElement, attr: Attr){
+			super(node, attr);
 
 			this.run();
 		}
@@ -14,7 +14,7 @@ module bindingTypes{
 		public run(){
 			super.run();
 			
-			this.element.setAttribute('src', this.expression.value);
+			this.node.setAttribute('src', this.expression.value);
 		}
 	}
 }
