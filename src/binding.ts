@@ -34,7 +34,7 @@ module bindings{
 
 		public dependencyChange(){
 			if(this.updateDependenciesOnChange){
-				// this.updateDependencies(); todo: for some reason this freezes the page...?
+				this.updateDependencies(); //todo: for some reason this freezes the page...?
 			}
 			this.run();
 		}
@@ -43,8 +43,7 @@ module bindings{
 			super.run();
 			this.expression.run();
 
-			if(this.dependencies.length == 0){
-				//failed to get any dependencies, listen on scope for changes
+			if(this.dependencies.length == 0 && !this.expression.success){ //if there are no depenencies and are expression failed then bind to are scope
 				this.dependencies.push(this.scope);
 				this.bindDependencies();
 				this.updateDependenciesOnChange = true; //when dependecies change update them
@@ -174,12 +173,13 @@ module bindings{
 			super();
 			this.expression = new bindings.Expression(node, <string> node.nodeValue, this.scope);
 			this.updateDependencies();
-			this.run() //todo: remove this and make it run the same way as the other bindings do
+
+			this.run();
 		}
 
 		public dependencyChange(){
 			if(this.updateDependenciesOnChange){
-				// this.updateDependencies(); todo: for some reason this freezes the page...?
+				this.updateDependencies(); //todo: for some reason this freezes the page...?
 			}
 			this.run();
 		}
@@ -187,15 +187,9 @@ module bindings{
 		public run(){
 			this.expression.run();
 
-			if(this.expression.success){
-				this.node.nodeValue = this.expression.value;
-			}
-			else{
-				this.node.nodeValue = this.expression.expression;
-			}
+			this.node.nodeValue = this.expression.value;
 
-			if(this.dependencies.length == 0){
-				//failed to get any dependencies, listen on scope for changes
+			if(this.dependencies.length == 0 && !this.expression.success){ //if there are no depenencies and are expression failed then bind to are scope
 				this.dependencies.push(this.scope);
 				this.bindDependencies();
 				this.updateDependenciesOnChange = true; //when dependecies change update them

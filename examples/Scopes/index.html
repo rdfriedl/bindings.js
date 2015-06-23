@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title bind-text="'Bindings - '+title"></title>
+		<title>Bindings - {title}</title>
 
 		<style type="text/css">
 			div{
@@ -29,14 +29,14 @@
 		
 		<p>Profile</p>
 		<div>
-			<p>name: <span bind-text="profile.name"></span></p>
-			<p>email: <span bind-text="profile.email"></span></p>
+			<p>name: {profile.name}</p>
+			<p>email: {profile.email}</p>
 		</div>
 
 		<p>Profile (using <i>bind-with</i>)</p>
 		<div bind-with="profile">
-			<p>name: <span bind-text="name"></span></p>
-			<p>email: <span bind-text="email"></span></p>
+			<p>name: {name}</p>
+			<p>email: {email}</p>
 		</div>
 
 		<h1>bind-foreach</h1>
@@ -44,26 +44,26 @@
 		<p>List (using <i>bind-foreach</i>)</p>
 		<div bind-foreach="items">
 			<div>
-				<p>name: <span bind-text="name"></span></p>
-				<p>price: <span bind-text="price"></span></p>
-				<p>$index: <span bind-text="$index"></span></p>
-				<p>$isFirst: <span bind-text="$isFirst"></span></p>
-				<p>$isLast: <span bind-text="$isLast"></span></p>
+				<p>name: {name}</p>
+				<p>price: {price}</p>
+				<p>$index: {$index}</p>
+				<p>$isFirst: {$isFirst}</p>
+				<p>$isLast: {$isLast}</p>
 			</div>
 		</div>
 
 		<p>List (using <i>bind-repeat</i>)</p>
 		<div bind-repeat="2">
 			<div>
-				<p>$index: <span bind-text="$index"></span></p>
-				<p>$isFirst: <span bind-text="$isFirst"></span></p>
-				<p>$isLast: <span bind-text="$isLast"></span></p>
+				<p>$index: {$index}</p>
+				<p>$isFirst: {$isFirst}</p>
+				<p>$isLast: {$isLast}</p>
 			</div>
 		</div>
 
 		<p>Parent</p>
 		<div bind-with="profile">
-			<span bind-text="$parent.title"></span> <i><small>$parent.title</small></i>
+			{$parent.title} <i><small>$parent.title</small></i>
 		</div>
 
 		<script type="text/javascript">

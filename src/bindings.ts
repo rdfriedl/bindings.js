@@ -78,6 +78,21 @@ module bindings {
 			return JSON.parse(JSON.stringify(obj));
 		}
 	}
+	export function extend(obj,obj2){
+		obj = obj || {};
+		obj2 = obj2 || {};
+		for(var i in obj2){
+			obj[i] = obj2[i];
+		}
+		return obj;
+	}
+	export function extendNew(o1:any = {},o2:any = {},o3:any = {},o4:any = {}){
+		var o = {};
+		for(var i in arguments){
+			this.extend(o, arguments[i]);
+		}
+		return o;
+	}
 }
 
 interface ObjectConstructor  {

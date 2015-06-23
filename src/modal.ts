@@ -7,7 +7,6 @@ module bindings{
 		public options: any = {
 			prefix: 'bind',
 			inlineDelimiters: ['{','}'],
-			inlineBinding: bindingTypes.TextBinding,
 			excludedElements: {
 				script: true,
 				link: true,
@@ -50,26 +49,22 @@ module bindings{
 			}
 
 			//set scope
-			node.__scope__ = scope;
-			node.__addedScope__ = node.__addedScope__ || {};
+			node.__scope__ = node.__scope__ || scope;
+			if(node.parentNode){
+				node.__addedScope__ = bindings.extendNew(node.parentNode.__addedScope__ || {}, node.__addedScope__ || {});
+			}
 
-			this.createBindings(node); //createBindings handles setting __bindings__
-
-			bindingsCreated = bindingsCreated.concat(node.__bindings__);
+			bindingsCreated = bindingsCreated.concat(this.createBindings(node)); //createBindings handles setting __bindings__
+			
+			//if node was a text node then it will not have any children even though createInlineBindings splits it into mutiple textNodes
 
 			//loop through and bind children
-			for (var i = 0; i < node.childNodes.length; i++) { //if node was a text node then i will not have any children even though createInlineBindings splits it
+			for (var i = 0; i < node.childNodes.length; i++) {
 				var childNode: Node = node.childNodes[i];
 
 				if (childNode.nodeName.toLowerCase() in this.options.excludedElements) continue;
 
-				//set scope
-				childNode.__scope__ = childNode.__scope__ || scope;
-				childNode.__addedScope__ = childNode.__addedScope__ || node.__addedScope__;
-
-				this.buildBindings(childNode, childNode.__scope__);
-
-				bindingsCreated = bindingsCreated.concat(childNode.__bindings__);
+				bindingsCreated = bindingsCreated.concat(this.buildBindings(childNode, childNode.__scope__ || scope));
 			};
 
 			return bindingsCreated;

@@ -14,9 +14,10 @@ module bindings{
 			var data: any = {
 				value: undefined,
 				success: true,
+				error: undefined
 			}
 			var variables: any = {
-				$modal: (this.scope.modal)? this.scope.modal.scope.object : undefined,
+				$node: this.node
 			};
 
 			var funcString: string = 'new Function("variables","addedScope","', args = [];
@@ -40,6 +41,7 @@ module bindings{
 			}
 			catch(e){
 				data.success = false;
+				data.error = e;
 			}
 
 			this.value = data.value;
@@ -62,6 +64,7 @@ module bindings{
 		public getDependencies(){
 			var data: any = {
 				success: true,
+				error: undefined,
 				requires: [],
 				gets: [],
 				sets: []
@@ -77,7 +80,7 @@ module bindings{
 			}
 
 			var variables:any = {
-				$modal: (this.scope.modal)? this.buildContext(this.scope.modal.scope,data) : undefined,
+				$node: this.node
 			};
 
 			var funcString: string = 'new Function("hidden","variables","addedScope",', args: any[] = [];
@@ -108,6 +111,7 @@ module bindings{
 			}
 			catch(e){
 				data.success = false;
+				data.error = e;
 			}
 
 			this.dependencies = data.requires;
@@ -159,6 +163,9 @@ module bindings{
 					return this.buildContext(scope.parent,requires,dontSet).context;
 				}.bind(this,scope,object,requires,dontSet))
 			}
+			else{
+				object.$parent = undefined;
+			}
 
 			// $Modal
 			if(scope.modal){
@@ -172,6 +179,9 @@ module bindings{
 
 					return this.buildContext(scope.modal.scope,requires,dontSet).context;
 				}.bind(this,scope,object,requires,dontSet))
+			}
+			else{
+				object.$modal = undefined
 			}
 
 			return {

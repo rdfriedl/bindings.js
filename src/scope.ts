@@ -73,16 +73,18 @@ module bindings {
 				switch(data[i].type){
 					case 'add':
 						this.setKey(data[i].name,data[i].object[data[i].name],true);
+						this.update();
 						break;
 					case 'update':
 						this.setKey(data[i].name,data[i].object[data[i].name],true);
 						break;
 					case 'delete':
 						this.removeKey(data[i].name,true);
+						this.update();
 						break;
 				}
 			}
-			this.update();
+			// this.update(); dont update at end, only update if a key is delete/added
 		}
 
 		public emit(event: string, data: any = undefined,direction: string = ''){

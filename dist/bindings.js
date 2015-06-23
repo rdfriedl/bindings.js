@@ -53,7 +53,6 @@ var bindings;
             this.options = {
                 prefix: 'bind',
                 inlineDelimiters: ['{', '}'],
-                inlineBinding: bindingTypes.TextBinding,
                 excludedElements: {
                     script: true,
                     link: true,
@@ -92,20 +91,18 @@ var bindings;
                 node.__bindings__ = [];
             }
             //set scope
-            node.__scope__ = scope;
-            node.__addedScope__ = node.__addedScope__ || {};
-            this.createBindings(node); //createBindings handles setting __bindings__
-            bindingsCreated = bindingsCreated.concat(node.__bindings__);
+            node.__scope__ = node.__scope__ || scope;
+            if (node.parentNode) {
+                node.__addedScope__ = bindings.extendNew(node.parentNode.__addedScope__ || {}, node.__addedScope__ || {});
+            }
+            bindingsCreated = bindingsCreated.concat(this.createBindings(node)); //createBindings handles setting __bindings__
+            //if node was a text node then it will not have any children even though createInlineBindings splits it into mutiple textNodes
             //loop through and bind children
             for (var i = 0; i < node.childNodes.length; i++) {
                 var childNode = node.childNodes[i];
                 if (childNode.nodeName.toLowerCase() in this.options.excludedElements)
                     continue;
-                //set scope
-                childNode.__scope__ = childNode.__scope__ || scope;
-                childNode.__addedScope__ = childNode.__addedScope__ || node.__addedScope__;
-                this.buildBindings(childNode, childNode.__scope__);
-                bindingsCreated = bindingsCreated.concat(childNode.__bindings__);
+                bindingsCreated = bindingsCreated.concat(this.buildBindings(childNode, childNode.__scope__ || scope));
             }
             ;
             return bindingsCreated;
@@ -306,16 +303,18 @@ var bindings;
                 switch (data[i].type) {
                     case 'add':
                         this.setKey(data[i].name, data[i].object[data[i].name], true);
+                        this.update();
                         break;
                     case 'update':
                         this.setKey(data[i].name, data[i].object[data[i].name], true);
                         break;
                     case 'delete':
                         this.removeKey(data[i].name, true);
+                        this.update();
                         break;
                 }
             }
-            this.update();
+            // this.update(); dont update at end, only update if a key is delete/added
         };
         Scope.prototype.emit = function (event, data, direction) {
             if (data === void 0) { data = undefined; }
@@ -403,14 +402,14 @@ var bindings;
         }
         OneWayBinding.prototype.dependencyChange = function () {
             if (this.updateDependenciesOnChange) {
+                this.updateDependencies(); //todo: for some reason this freezes the page...?
             }
             this.run();
         };
         OneWayBinding.prototype.run = function () {
             _super.prototype.run.call(this);
             this.expression.run();
-            if (this.dependencies.length == 0) {
-                //failed to get any dependencies, listen on scope for changes
+            if (this.dependencies.length == 0 && !this.expression.success) {
                 this.dependencies.push(this.scope);
                 this.bindDependencies();
                 this.updateDependenciesOnChange = true; //when dependecies change update them
@@ -526,7 +525,7 @@ var bindings;
             this.updateDependenciesOnChange = false;
             this.expression = new bindings.Expression(node, node.nodeValue, this.scope);
             this.updateDependencies();
-            this.run(); //todo: remove this and make it run the same way as the other bindings do
+            this.run();
         }
         Object.defineProperty(InlineBinding.prototype, "scope", {
             get: function () {
@@ -537,19 +536,14 @@ var bindings;
         });
         InlineBinding.prototype.dependencyChange = function () {
             if (this.updateDependenciesOnChange) {
+                this.updateDependencies(); //todo: for some reason this freezes the page...?
             }
             this.run();
         };
         InlineBinding.prototype.run = function () {
             this.expression.run();
-            if (this.expression.success) {
-                this.node.nodeValue = this.expression.value;
-            }
-            else {
-                this.node.nodeValue = this.expression.expression;
-            }
-            if (this.dependencies.length == 0) {
-                //failed to get any dependencies, listen on scope for changes
+            this.node.nodeValue = this.expression.value;
+            if (this.dependencies.length == 0 && !this.expression.success) {
                 this.dependencies.push(this.scope);
                 this.bindDependencies();
                 this.updateDependenciesOnChange = true; //when dependecies change update them
@@ -615,9 +609,10 @@ var bindings;
             var data = {
                 value: undefined,
                 success: true,
+                error: undefined
             };
             var variables = {
-                $modal: (this.scope.modal) ? this.scope.modal.scope.object : undefined,
+                $node: this.node
             };
             var funcString = 'new Function("variables","addedScope","', args = [];
             var context = this.buildContext(this.scope).context;
@@ -638,6 +633,7 @@ var bindings;
             }
             catch (e) {
                 data.success = false;
+                data.error = e;
             }
             this.value = data.value;
             this.success = data.success;
@@ -656,6 +652,7 @@ var bindings;
         Expression.prototype.getDependencies = function () {
             var data = {
                 success: true,
+                error: undefined,
                 requires: [],
                 gets: [],
                 sets: []
@@ -670,7 +667,7 @@ var bindings;
                 eval: bindings.noop
             };
             var variables = {
-                $modal: (this.scope.modal) ? this.buildContext(this.scope.modal.scope, data) : undefined,
+                $node: this.node
             };
             var funcString = 'new Function("hidden","variables","addedScope",', args = [];
             args.push(hidden);
@@ -696,6 +693,7 @@ var bindings;
             }
             catch (e) {
                 data.success = false;
+                data.error = e;
             }
             this.dependencies = data.requires;
             return data;
@@ -742,6 +740,9 @@ var bindings;
                     return this.buildContext(scope.parent, requires, dontSet).context;
                 }.bind(this, scope, object, requires, dontSet));
             }
+            else {
+                object.$parent = undefined;
+            }
             // $Modal
             if (scope.modal) {
                 object.__defineGetter__('$modal', function (scope, object, requires, dontSet) {
@@ -753,6 +754,9 @@ var bindings;
                     }
                     return this.buildContext(scope.modal.scope, requires, dontSet).context;
                 }.bind(this, scope, object, requires, dontSet));
+            }
+            else {
+                object.$modal = undefined;
             }
             return {
                 context: object,
@@ -836,8 +840,8 @@ var bindingTypes;
         function ForEachBinding(node, attr) {
             _super.call(this, node, attr);
             this.children = [];
-            for (var i = 0; i < this.node.children.length; i++) {
-                this.children.push(this.node.children[i]);
+            for (var i = 0; i < this.node.childNodes.length; i++) {
+                this.children.push(this.node.childNodes[i]);
             }
             this.removeAllChildren();
             this.run();
@@ -848,8 +852,8 @@ var bindingTypes;
             }
         };
         ForEachBinding.prototype.removeAllChildren = function () {
-            while (this.node.children.length !== 0) {
-                this.node.removeChild(this.node.children[0]);
+            while (this.node.childNodes.length !== 0) {
+                this.node.removeChild(this.node.childNodes[0]);
             }
         };
         ForEachBinding.prototype.run = function () {
@@ -857,15 +861,15 @@ var bindingTypes;
             var scope = this.expression.runOnScope().value;
             this.removeAllChildren();
             if (scope instanceof bindings.Scope) {
-                for (var i in scope.values) {
+                for (var i = 0; i < scope.values.length; i++) {
                     for (var k = 0; k < this.children.length; k++) {
                         var el = this.children[k].cloneNode(true);
                         el.__scope__ = scope.values[i];
-                        el.__addedScope__ = {
+                        el.__addedScope__ = bindings.extend(el.__addedScope__, {
                             $index: i,
                             $isFirst: i == 0,
                             $isLast: i == scope.values.length - 1
-                        };
+                        });
                         this.node.appendChild(el);
                     }
                     ;
@@ -981,8 +985,8 @@ var bindingTypes;
         function RepeatBinding(node, attr) {
             _super.call(this, node, attr);
             this.children = [];
-            for (var i = 0; i < this.node.children.length; i++) {
-                this.children.push(this.node.children[i]);
+            for (var i = 0; i < this.node.childNodes.length; i++) {
+                this.children.push(this.node.childNodes[i]);
             }
             this.removeChildren();
             this.run();
@@ -993,8 +997,8 @@ var bindingTypes;
             }
         };
         RepeatBinding.prototype.removeChildren = function () {
-            while (this.node.children.length !== 0) {
-                this.node.removeChild(this.node.children[0]);
+            while (this.node.childNodes.length !== 0) {
+                this.node.removeChild(this.node.childNodes[0]);
             }
         };
         RepeatBinding.prototype.run = function () {
@@ -1004,11 +1008,11 @@ var bindingTypes;
             for (var i = 0; i < times; i++) {
                 for (var k = 0; k < this.children.length; k++) {
                     var el = this.children[k].cloneNode(true);
-                    el.__addedScope__ = {
+                    el.__addedScope__ = bindings.extend(el.__addedScope__, {
                         $index: i,
                         $isFirst: i == 0,
                         $isLast: i == times - 1
-                    };
+                    });
                     this.node.appendChild(el);
                 }
                 ;
@@ -1111,8 +1115,8 @@ var bindingTypes;
             // super.run(); dont run because we arnt going to use .run on are expression
             var scope = this.expression.runOnScope().value;
             if (scope instanceof bindings.Scope) {
-                for (var i = 0; i < this.node.children.length; i++) {
-                    var el = this.node.children[i];
+                for (var i = 0; i < this.node.childNodes.length; i++) {
+                    var el = this.node.childNodes[i];
                     el.__scope__ = scope;
                 }
             }
@@ -1328,5 +1332,26 @@ var bindings;
         }
     }
     bindings.clone = clone;
+    function extend(obj, obj2) {
+        obj = obj || {};
+        obj2 = obj2 || {};
+        for (var i in obj2) {
+            obj[i] = obj2[i];
+        }
+        return obj;
+    }
+    bindings.extend = extend;
+    function extendNew(o1, o2, o3, o4) {
+        if (o1 === void 0) { o1 = {}; }
+        if (o2 === void 0) { o2 = {}; }
+        if (o3 === void 0) { o3 = {}; }
+        if (o4 === void 0) { o4 = {}; }
+        var o = {};
+        for (var i in arguments) {
+            this.extend(o, arguments[i]);
+        }
+        return o;
+    }
+    bindings.extendNew = extendNew;
 })(bindings || (bindings = {}));
 //# sourceMappingURL=bindings.js.map

@@ -3,4 +3,3 @@
 - fix bug with arrays, if you call array.push it dose not add an element to the array because its using a copy of the array
 - improve expression.run
 - add comment bindings
-- make sure bindings aren't run twice when binding

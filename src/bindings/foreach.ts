@@ -4,13 +4,13 @@
 module bindingTypes{
 	export class ForEachBinding extends bindings.OneWayBinding{
 		public static id: string = 'foreach';
-		private children: HTMLElement[] = [];
+		private children: Node[] = [];
 
 		constructor(node: HTMLElement, attr: Attr){
 			super(node, attr);
 
-			for (var i = 0; i < this.node.children.length; i++){
-				this.children.push(<HTMLElement> this.node.children[i]);
+			for (var i = 0; i < this.node.childNodes.length; i++){
+				this.children.push(this.node.childNodes[i]);
 			}
 			this.removeAllChildren();
 
@@ -24,8 +24,8 @@ module bindingTypes{
 		}
 
 		private removeAllChildren(){
-			while (this.node.children.length !== 0) {
-			    this.node.removeChild(this.node.children[0]);
+			while (this.node.childNodes.length !== 0) {
+			    this.node.removeChild(this.node.childNodes[0]);
 			}
 		}
 
@@ -36,15 +36,15 @@ module bindingTypes{
 			this.removeAllChildren();
 
 			if(scope instanceof bindings.Scope){
-				for (var i in scope.values) {
+				for (var i = 0; i < scope.values.length; i++) {
 					for (var k = 0; k < this.children.length; k++) {
-						var el: HTMLElement = <HTMLElement> this.children[k].cloneNode(true);
+						var el: Node = this.children[k].cloneNode(true);
 						el.__scope__ = scope.values[i];
-						el.__addedScope__ = {
+						el.__addedScope__ = bindings.extend(el.__addedScope__,{
 							$index: i,
 							$isFirst: i==0,
 							$isLast: i==scope.values.length-1
-						}
+						});
 						this.node.appendChild(el)
 					};
 				};

@@ -4,13 +4,13 @@
 module bindingTypes{
 	export class RepeatBinding extends bindings.OneWayBinding{
 		public static id: string = 'repeat';
-		private children: HTMLElement[] = [];
+		private children: Node[] = [];
 
 		constructor(node: HTMLElement, attr: Attr){
 			super(node, attr);
 
-			for (var i = 0; i < this.node.children.length; i++){
-				this.children.push(<HTMLElement> this.node.children[i]);
+			for (var i = 0; i < this.node.childNodes.length; i++){
+				this.children.push(this.node.childNodes[i]);
 			}
 			this.removeChildren();
 
@@ -24,8 +24,8 @@ module bindingTypes{
 		}
 
 		private removeChildren(){
-			while (this.node.children.length !== 0) {
-			    this.node.removeChild(this.node.children[0]);
+			while (this.node.childNodes.length !== 0) {
+			    this.node.removeChild(this.node.childNodes[0]);
 			}
 		}
 
@@ -36,12 +36,12 @@ module bindingTypes{
 			var times = this.expression.value;
 			for (var i = 0; i < times; i++) {
 				for (var k = 0; k < this.children.length; k++) {
-					var el: HTMLElement = <HTMLElement> this.children[k].cloneNode(true);
-					el.__addedScope__ = {
+					var el: Node = this.children[k].cloneNode(true);
+					el.__addedScope__ = bindings.extend(el.__addedScope__,{
 						$index: i,
-						$isFirst: i==0,
-						$isLast: i==times-1
-					}
+						$isFirst: i == 0,
+						$isLast: i == times - 1
+					});
 					this.node.appendChild(el)
 				};
 			};

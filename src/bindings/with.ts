@@ -16,8 +16,8 @@ module bindingTypes{
 			var scope: bindings.Scope = this.expression.runOnScope().value;
 
 			if(scope instanceof bindings.Scope){
-				for (var i = 0; i < this.node.children.length; i++){
-					var el: HTMLElement = <HTMLElement> this.node.children[i];
+				for (var i = 0; i < this.node.childNodes.length; i++){
+					var el: Node = this.node.childNodes[i];
 					el.__scope__ = scope;
 				}
 			}
