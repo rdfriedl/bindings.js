@@ -5,9 +5,8 @@ module bindingTypes{
 	export class VisibleBinding extends bindings.OneWayBinding{
 		public static id: string = 'visible';
 
-		constructor(node: HTMLElement, attr: Attr){
-			super(node, attr);
-
+		constructor(node: HTMLElement, expression: string){
+			super(node, expression);
 			this.run();
 		}
 

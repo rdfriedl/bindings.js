@@ -6,8 +6,8 @@ module bindingTypes{
 		public static id: string = 'text';
 		private oldText: string;
 
-		constructor(node:HTMLBRElement,attr: Attr){
-			super(node, attr);
+		constructor(node:HTMLBRElement,expression: string){
+			super(node, expression);
 			
 			this.oldText = this.node.textContent;
 			this.run();

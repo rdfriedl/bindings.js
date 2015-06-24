@@ -6,9 +6,8 @@ module bindingTypes{
 		public static id: string = 'repeat';
 		private children: Node[] = [];
 
-		constructor(node: HTMLElement, attr: Attr){
-			super(node, attr);
-
+		constructor(node: HTMLElement, expression: string){
+			super(node, expression);
 			for (var i = 0; i < this.node.childNodes.length; i++){
 				this.children.push(this.node.childNodes[i]);
 			}

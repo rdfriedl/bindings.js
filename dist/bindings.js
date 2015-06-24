@@ -125,10 +125,10 @@ var bindings;
             for (var i = 0; i < attrs.length; i++) {
                 var attr = attrs.item(i);
                 var type = attr.name;
-                //find the binding attrs and extract the src
-                if (type.indexOf(this.options.prefix.toLowerCase() + '-') == 0) {
-                    type = type.replace(this.options.prefix.toLowerCase() + '-', '');
-                    var binding = bindingTypes.createBinding(type, node, attr);
+                var types = type.split('-');
+                if (types[0] == this.options.prefix) {
+                    types.splice(0, 1); //remove the prefix
+                    var binding = bindingTypes.createBinding(types, node, attr.value);
                     if (binding) {
                         bindingsCreated.push(binding);
                     }
@@ -392,12 +392,12 @@ var bindings;
     bindings.Binding = Binding;
     var OneWayBinding = (function (_super) {
         __extends(OneWayBinding, _super);
-        function OneWayBinding(node, attr) {
+        function OneWayBinding(node, expression) {
             _super.call(this);
             this.node = node;
             this.dependencies = []; //a list of scopes and values this bindings uses
             this.updateDependenciesOnChange = false;
-            this.expression = new bindings.Expression(node, attr.value, this.scope);
+            this.expression = new bindings.Expression(node, expression, this.scope);
             this.updateDependencies();
         }
         OneWayBinding.prototype.dependencyChange = function () {
@@ -446,8 +446,8 @@ var bindings;
     bindings.OneWayBinding = OneWayBinding;
     var TwoWayBinding = (function (_super) {
         __extends(TwoWayBinding, _super);
-        function TwoWayBinding(node, attr) {
-            _super.call(this, node, attr);
+        function TwoWayBinding(node, expression) {
+            _super.call(this, node, expression);
             this.domEvents = []; //add events to this list to bind to them
             this.dontUpdate = false;
             this.bindEvents();
@@ -484,12 +484,11 @@ var bindings;
     bindings.TwoWayBinding = TwoWayBinding;
     var EventBinding = (function (_super) {
         __extends(EventBinding, _super);
-        function EventBinding(node, attr) {
+        function EventBinding(node, expression) {
             _super.call(this);
             this.node = node;
-            this.attr = attr;
             this.domEvents = [];
-            this.expression = new bindings.Expression(node, attr.value, this.scope);
+            this.expression = new bindings.Expression(node, expression, this.scope);
             this.bindEvents();
         }
         EventBinding.prototype.change = function (event) {
@@ -581,11 +580,26 @@ var bindings;
 })(bindings || (bindings = {}));
 var bindingTypes;
 (function (bindingTypes) {
-    function createBinding(type, node, attr) {
+    function getBinding(type) {
         var binding;
         for (var i in this) {
             if (this[i].id == type) {
-                binding = new this[i](node, attr);
+                return this[i];
+            }
+        }
+        return binding;
+    }
+    bindingTypes.getBinding = getBinding;
+    function createBinding(type, node, expression) {
+        if (!(type instanceof Array)) {
+            type = [type];
+        }
+        var binding;
+        var id = type[0];
+        var data = type[1] || '';
+        for (var i in this) {
+            if (this[i].id == id) {
+                binding = new this[i](node, expression, data);
                 break;
             }
         }
@@ -773,8 +787,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var ClickBinding = (function (_super) {
         __extends(ClickBinding, _super);
-        function ClickBinding(node, attr) {
-            _super.call(this, node, attr);
+        function ClickBinding(node, expression) {
+            _super.call(this, node, expression);
             this.domEvents = ['click'];
             this.updateEvents();
         }
@@ -789,8 +803,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var EnabledBinding = (function (_super) {
         __extends(EnabledBinding, _super);
-        function EnabledBinding(node, attr) {
-            _super.call(this, node, attr);
+        function EnabledBinding(node, expression) {
+            _super.call(this, node, expression);
             this.run();
         }
         EnabledBinding.prototype.run = function () {
@@ -813,8 +827,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var DisabledBinding = (function (_super) {
         __extends(DisabledBinding, _super);
-        function DisabledBinding(node, attr) {
-            _super.call(this, node, attr);
+        function DisabledBinding(node, expression) {
+            _super.call(this, node, expression);
             this.run();
         }
         DisabledBinding.prototype.run = function () {
@@ -837,8 +851,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var ForEachBinding = (function (_super) {
         __extends(ForEachBinding, _super);
-        function ForEachBinding(node, attr) {
-            _super.call(this, node, attr);
+        function ForEachBinding(node, expression) {
+            _super.call(this, node, expression);
             this.children = [];
             for (var i = 0; i < this.node.childNodes.length; i++) {
                 this.children.push(this.node.childNodes[i]);
@@ -896,8 +910,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var IfBinding = (function (_super) {
         __extends(IfBinding, _super);
-        function IfBinding(node, attr) {
-            _super.call(this, node, attr);
+        function IfBinding(node, expression) {
+            _super.call(this, node, expression);
             this.children = [];
             for (var i = 0; i < this.node.children.length; i++) {
                 this.children.push(this.node.children[i]);
@@ -939,8 +953,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var IfNotBinding = (function (_super) {
         __extends(IfNotBinding, _super);
-        function IfNotBinding(node, attr) {
-            _super.call(this, node, attr);
+        function IfNotBinding(node, expression) {
+            _super.call(this, node, expression);
             this.children = [];
             for (var i = 0; i < this.node.children.length; i++) {
                 this.children.push(this.node.children[i]);
@@ -982,8 +996,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var RepeatBinding = (function (_super) {
         __extends(RepeatBinding, _super);
-        function RepeatBinding(node, attr) {
-            _super.call(this, node, attr);
+        function RepeatBinding(node, expression) {
+            _super.call(this, node, expression);
             this.children = [];
             for (var i = 0; i < this.node.childNodes.length; i++) {
                 this.children.push(this.node.childNodes[i]);
@@ -1035,8 +1049,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var SubmitBinding = (function (_super) {
         __extends(SubmitBinding, _super);
-        function SubmitBinding(node, attr) {
-            _super.call(this, node, attr);
+        function SubmitBinding(node, expression) {
+            _super.call(this, node, expression);
             this.domEvents = ['submit'];
             this.updateEvents();
         }
@@ -1055,8 +1069,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var TextBinding = (function (_super) {
         __extends(TextBinding, _super);
-        function TextBinding(node, attr) {
-            _super.call(this, node, attr);
+        function TextBinding(node, expression) {
+            _super.call(this, node, expression);
             this.oldText = this.node.textContent;
             this.run();
         }
@@ -1079,8 +1093,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var ValueBinding = (function (_super) {
         __extends(ValueBinding, _super);
-        function ValueBinding(node, attr) {
-            _super.call(this, node, attr);
+        function ValueBinding(node, expression) {
+            _super.call(this, node, expression);
             this.node = node;
             this.domEvents = ['change'];
             this.updateEvents();
@@ -1107,8 +1121,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var WithBinding = (function (_super) {
         __extends(WithBinding, _super);
-        function WithBinding(node, attr) {
-            _super.call(this, node, attr);
+        function WithBinding(node, expression) {
+            _super.call(this, node, expression);
             this.run();
         }
         WithBinding.prototype.run = function () {
@@ -1135,8 +1149,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var HTMLBinding = (function (_super) {
         __extends(HTMLBinding, _super);
-        function HTMLBinding(node, attr) {
-            _super.call(this, node, attr);
+        function HTMLBinding(node, expression) {
+            _super.call(this, node, expression);
             this.oldText = this.node.textContent;
             this.run();
         }
@@ -1159,8 +1173,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var VisibleBinding = (function (_super) {
         __extends(VisibleBinding, _super);
-        function VisibleBinding(node, attr) {
-            _super.call(this, node, attr);
+        function VisibleBinding(node, expression) {
+            _super.call(this, node, expression);
             this.run();
         }
         VisibleBinding.prototype.run = function () {
@@ -1183,8 +1197,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var HrefBinding = (function (_super) {
         __extends(HrefBinding, _super);
-        function HrefBinding(node, attr) {
-            _super.call(this, node, attr);
+        function HrefBinding(node, expression) {
+            _super.call(this, node, expression);
             this.run();
         }
         HrefBinding.prototype.run = function () {
@@ -1202,8 +1216,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var SrcBinding = (function (_super) {
         __extends(SrcBinding, _super);
-        function SrcBinding(node, attr) {
-            _super.call(this, node, attr);
+        function SrcBinding(node, expression) {
+            _super.call(this, node, expression);
             this.run();
         }
         SrcBinding.prototype.run = function () {
@@ -1221,8 +1235,8 @@ var bindingTypes;
 (function (bindingTypes) {
     var InputBinding = (function (_super) {
         __extends(InputBinding, _super);
-        function InputBinding(node, attr) {
-            _super.call(this, node, attr);
+        function InputBinding(node, expression) {
+            _super.call(this, node, expression);
             this.node = node;
             this.domEvents = ['input'];
             this.updateEvents();

@@ -4,8 +4,8 @@
 module bindingTypes{
 	export class ValueBinding extends bindings.TwoWayBinding{
 		public static id: string = 'value';
-		constructor(public node: HTMLInputElement, attr: Attr){
-			super(<HTMLElement> node, attr);
+		constructor(public node: HTMLInputElement, expression: string){
+			super(<HTMLElement> node, expression);
 
 			this.domEvents = ['change'];
 			this.updateEvents();

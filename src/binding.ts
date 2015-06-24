@@ -25,9 +25,9 @@ module bindings{
 	export class OneWayBinding extends bindings.Binding{
 		private dependencies: any[] = []; //a list of scopes and values this bindings uses
 		private updateDependenciesOnChange: boolean = false;
-		constructor(public node: HTMLElement, attr: Attr){
+		constructor(public node: HTMLElement, expression: string){
 			super();
-			this.expression = new bindings.Expression(node, attr.value, this.scope);
+			this.expression = new bindings.Expression(node, expression, this.scope);
 
 			this.updateDependencies();
 		}
@@ -83,8 +83,8 @@ module bindings{
 	export class TwoWayBinding extends bindings.OneWayBinding{
 		public domEvents: string[] = []; //add events to this list to bind to them
 		private dontUpdate: boolean = false;
-		constructor(node: HTMLElement, attr: Attr){
-			super(node, attr);
+		constructor(node: HTMLElement, expression: string){
+			super(node, expression);
 
 			this.bindEvents();
 		}
@@ -126,9 +126,9 @@ module bindings{
 	export class EventBinding extends bindings.Binding{
 		public domEvents: string[] = [];
 
-		constructor(public node: HTMLElement, public attr: Attr){
+		constructor(public node: HTMLElement, expression: string){
 			super();
-			this.expression = new bindings.Expression(node, attr.value, this.scope);
+			this.expression = new bindings.Expression(node, expression, this.scope);
 
 			this.bindEvents();
 		}
@@ -215,13 +215,13 @@ module bindings{
 		}
 
 		public bindDependencies(){
-			for (var i: number = 0; i < this.dependencies.length; i++){
+			for (var i = 0; i < this.dependencies.length; i++){
 				this.dependencies[i].on('change', this.dependencyChange.bind(this));
 			}
 		}
 
 		public unbindDependencies(){
-			for (var i: number = 0; i < this.dependencies.length; i++){
+			for (var i = 0; i < this.dependencies.length; i++){
 				this.dependencies[i].off('change', this.dependencyChange.bind(this));
 			}
 		}
@@ -229,11 +229,25 @@ module bindings{
 }
 
 module bindingTypes{
-	export function createBinding(type:string, node:HTMLElement, attr:Attr): bindings.Binding{
+	export function getBinding(type: string){
 		var binding: bindings.Binding;
 		for(var i in this){
 			if(this[i].id == type){
-				binding = <bindings.Binding> new this[i](node, attr);
+				return this[i];
+			}
+		}
+		return binding;
+	}
+	export function createBinding(type:any, node:HTMLElement, expression: string): bindings.Binding{
+		if(!(type instanceof Array)){
+			type = [type];
+		}
+		var binding: bindings.Binding;
+		var id: string = type[0];
+		var data: string = type[1] || '';
+		for(var i in this){
+			if(this[i].id == id){
+				binding = <bindings.Binding> new this[i](node, expression, data);
 				break;
 			}
 		}

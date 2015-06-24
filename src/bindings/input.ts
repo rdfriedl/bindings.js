@@ -4,8 +4,8 @@
 module bindingTypes{
 	export class InputBinding extends bindings.TwoWayBinding{
 		public static id: string = 'input';
-		constructor(public node: HTMLInputElement, attr: Attr){
-			super(<HTMLElement> node, attr);
+		constructor(public node: HTMLInputElement, expression: string){
+			super(<HTMLElement> node, expression);
 
 			this.domEvents = ['input'];
 			this.updateEvents();

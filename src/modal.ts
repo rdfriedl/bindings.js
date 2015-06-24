@@ -89,11 +89,13 @@ module bindings{
 			for (var i = 0; i < attrs.length; i++) {
 				var attr: Attr = <Attr>attrs.item(i);
 				var type: string = attr.name;
-				//find the binding attrs and extract the src
-				if (type.indexOf(this.options.prefix.toLowerCase() + '-') == 0) {
-					type = type.replace(this.options.prefix.toLowerCase() + '-', '');
 
-					var binding: bindings.Binding = bindingTypes.createBinding(type, node, attr);
+				var types: string[] = type.split('-');
+
+				if (types[0] == this.options.prefix) {
+					types.splice(0,1); //remove the prefix
+
+					var binding: bindings.Binding = bindingTypes.createBinding(types, node, attr.value);
 					if (binding) {
 						bindingsCreated.push(binding);
 					}

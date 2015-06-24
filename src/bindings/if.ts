@@ -6,9 +6,8 @@ module bindingTypes{
 		public static id: string = 'if';
 		private children: HTMLElement[] = [];
 
-		constructor(node: HTMLElement, attr: Attr){
-			super(node, attr);
-
+		constructor(node: HTMLElement, expression: string){
+			super(node, expression);
 			for (var i = 0; i < this.node.children.length; i++){
 				this.children.push(<HTMLElement> this.node.children[i]);
 			}
