@@ -596,7 +596,8 @@ var bindingTypes;
         }
         var binding;
         var id = type[0];
-        var data = type[1] || '';
+        type.splice(0, 1); //remove first entry
+        var data = type.join('-');
         for (var i in this) {
             if (this[i].id == id) {
                 binding = new this[i](node, expression, data);
@@ -1257,6 +1258,82 @@ var bindingTypes;
     })(bindings.TwoWayBinding);
     bindingTypes.InputBinding = InputBinding;
 })(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-enabled
+var bindingTypes;
+(function (bindingTypes) {
+    var AttrBinding = (function (_super) {
+        __extends(AttrBinding, _super);
+        function AttrBinding(node, expression, attr) {
+            _super.call(this, node, expression);
+            this.attr = attr;
+            this.run();
+        }
+        AttrBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            this.node.setAttribute(this.attr, this.expression.value);
+        };
+        AttrBinding.id = 'attr';
+        return AttrBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.AttrBinding = AttrBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-enabled
+var bindingTypes;
+(function (bindingTypes) {
+    var ClassBinding = (function (_super) {
+        __extends(ClassBinding, _super);
+        function ClassBinding(node, expression, bindClass) {
+            _super.call(this, node, expression);
+            this.bindClass = bindClass;
+            this.run();
+        }
+        ClassBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            if (this.expression.value && !this.hasClass()) {
+                this.addClass();
+            }
+            else if (this.hasClass()) {
+                this.removeClass();
+            }
+        };
+        ClassBinding.prototype.addClass = function () {
+            this.node.className += ' ' + this.bindClass;
+            this.node.className = this.node.className.trim();
+        };
+        ClassBinding.prototype.removeClass = function () {
+            this.node.className = this.node.className.replace(new RegExp('(?:^|\s)' + this.bindClass + '(?!\S)', 'g'), '');
+            this.node.className = this.node.className.trim();
+        };
+        ClassBinding.prototype.hasClass = function () {
+            return this.node.className.indexOf(this.bindClass) !== -1;
+        };
+        ClassBinding.id = 'class';
+        return ClassBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.ClassBinding = ClassBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
+// bind-enabled
+var bindingTypes;
+(function (bindingTypes) {
+    var StyleBinding = (function (_super) {
+        __extends(StyleBinding, _super);
+        function StyleBinding(node, expression, style) {
+            _super.call(this, node, expression);
+            this.style = style;
+            this.run();
+        }
+        StyleBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+            this.node.style[this.style] = this.expression.value;
+        };
+        StyleBinding.id = 'style';
+        return StyleBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.StyleBinding = StyleBinding;
+})(bindingTypes || (bindingTypes = {}));
 /// <reference path="eventEmiter.ts" />
 /// <reference path="modal.ts" />
 /// <reference path="scope.ts" />
@@ -1280,6 +1357,9 @@ var bindingTypes;
 /// <reference path="bindings/href.ts" />
 /// <reference path="bindings/src.ts" />
 /// <reference path="bindings/input.ts" />
+/// <reference path="bindings/attr.ts" />
+/// <reference path="bindings/class.ts" />
+/// <reference path="bindings/style.ts" />
 var bindings;
 (function (bindings) {
     function createModal(object, options) {

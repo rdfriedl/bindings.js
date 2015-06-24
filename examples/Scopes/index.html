@@ -8,6 +8,12 @@
 				border: 1px solid black;
 				padding: 10px;
 			}
+			.red{
+				background-color: rgba(255,0,0,0.2) !important;
+			}
+			.grey{
+				background-color: rgba(20,20,20,0.2);
+			}
 			p{
 				margin: 0px;
 			}
@@ -44,11 +50,11 @@
 		<p>List (using <i>bind-foreach</i>)</p>
 		<div bind-foreach="items">
 			<div>
-				<p>name: {name}</p>
+				<p class="grey" bind-class-red="$isFirst || $isLast">name: {name}</p>
 				<p>price: {price}</p>
-				<p>$index: {$index}</p>
+				<p class="grey">$index: {$index}</p>
 				<p>$isFirst: {$isFirst}</p>
-				<p>$isLast: {$isLast}</p>
+				<p class="grey">$isLast: {$isLast}</p>
 			</div>
 		</div>
 

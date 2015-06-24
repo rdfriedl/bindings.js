@@ -238,13 +238,14 @@ module bindingTypes{
 		}
 		return binding;
 	}
-	export function createBinding(type:any, node:HTMLElement, expression: string): bindings.Binding{
-		if(!(type instanceof Array)){
+	export function createBinding(type: any, node: HTMLElement, expression: string): bindings.Binding {
+		if (!(type instanceof Array)) {
 			type = [type];
 		}
 		var binding: bindings.Binding;
 		var id: string = type[0];
-		var data: string = type[1] || '';
+		type.splice(0, 1); //remove first entry
+		var data: string = type.join('-');
 		for(var i in this){
 			if(this[i].id == id){
 				binding = <bindings.Binding> new this[i](node, expression, data);

@@ -21,6 +21,9 @@
 /// <reference path="bindings/href.ts" />
 /// <reference path="bindings/src.ts" />
 /// <reference path="bindings/input.ts" />
+/// <reference path="bindings/attr.ts" />
+/// <reference path="bindings/class.ts" />
+/// <reference path="bindings/style.ts" />
 
 module bindings {
 	export function createModal(object:any = {},options:any = {}){
