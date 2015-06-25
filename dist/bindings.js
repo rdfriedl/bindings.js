@@ -122,22 +122,50 @@ var bindings;
         Modal.prototype.createAttrBindings = function (node) {
             var bindingsCreated = [];
             var attrs = node.attributes;
+            var types = [];
+            //find the bindings
             for (var i = 0; i < attrs.length; i++) {
                 var attr = attrs.item(i);
-                var type = attr.name;
-                var types = type.split('-');
-                if (types[0] == this.options.prefix) {
-                    types.splice(0, 1); //remove the prefix
-                    var binding = bindingTypes.createBinding(types, node, attr.value);
-                    if (binding) {
-                        bindingsCreated.push(binding);
+                var _types = attr.name.split('-');
+                if (_types[0] == this.options.prefix) {
+                    _types.splice(0, 1); //remove the prefix
+                    var fn = bindingTypes.getBinding(_types[0]);
+                    if (fn) {
+                        types.push({
+                            types: _types,
+                            attr: attr,
+                            constructor: fn
+                        });
                     }
                     else {
-                        console.error('cant find binding: ' + type);
+                        console.error('cant find binding: ' + attr.name);
                     }
                 }
             }
             ;
+            //sort by priority
+            types.sort(function (a, b) {
+                if (a.constructor.priority < b.constructor.priority) {
+                    return 1;
+                }
+                else if (a.constructor.priority > b.constructor.priority) {
+                    return -1;
+                }
+                else {
+                    return 0;
+                }
+            });
+            //create the bindings
+            for (var i = 0; i < types.length; i++) {
+                var t = types[i];
+                try {
+                    bindingsCreated.push(bindingTypes.createBinding(t.types, node, t.attr.value));
+                }
+                catch (e) {
+                    console.error('failed to create binding: ' + t.attr.name);
+                    console.error(e);
+                }
+            }
             node.__bindings__ = bindingsCreated;
             return bindingsCreated;
         };
@@ -387,6 +415,7 @@ var bindings;
         Binding.prototype.unbind = function () {
         };
         Binding.id = '';
+        Binding.priority = 0;
         return Binding;
     })();
     bindings.Binding = Binding;
@@ -901,6 +930,7 @@ var bindingTypes;
             this.restoreChildren();
         };
         ForEachBinding.id = 'foreach';
+        ForEachBinding.priority = 3;
         return ForEachBinding;
     })(bindings.OneWayBinding);
     bindingTypes.ForEachBinding = ForEachBinding;
@@ -1040,6 +1070,7 @@ var bindingTypes;
             this.restoreChildren();
         };
         RepeatBinding.id = 'repeat';
+        RepeatBinding.priority = 1;
         return RepeatBinding;
     })(bindings.OneWayBinding);
     bindingTypes.RepeatBinding = RepeatBinding;
@@ -1140,6 +1171,7 @@ var bindingTypes;
             }
         };
         WithBinding.id = 'with';
+        WithBinding.priority = 1;
         return WithBinding;
     })(bindings.OneWayBinding);
     bindingTypes.WithBinding = WithBinding;
@@ -1315,7 +1347,7 @@ var bindingTypes;
     bindingTypes.ClassBinding = ClassBinding;
 })(bindingTypes || (bindingTypes = {}));
 /// <reference path="../bindings.ts" />
-// bind-enabled
+// bind-style-[style]
 var bindingTypes;
 (function (bindingTypes) {
     var StyleBinding = (function (_super) {

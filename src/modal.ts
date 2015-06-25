@@ -86,24 +86,55 @@ module bindings{
 		private createAttrBindings(node: HTMLElement): bindings.Binding[] {
 			var bindingsCreated = [];
 			var attrs: NodeList = node.attributes;
+			var types: any[] = [];
+
+			//find the bindings
 			for (var i = 0; i < attrs.length; i++) {
 				var attr: Attr = <Attr>attrs.item(i);
-				var type: string = attr.name;
+				var _types: string[] = attr.name.split('-');
 
-				var types: string[] = type.split('-');
-
-				if (types[0] == this.options.prefix) {
-					types.splice(0,1); //remove the prefix
-
-					var binding: bindings.Binding = bindingTypes.createBinding(types, node, attr.value);
-					if (binding) {
-						bindingsCreated.push(binding);
+				if (_types[0] == this.options.prefix) {
+					_types.splice(0,1); //remove the prefix
+					var fn = bindingTypes.getBinding(_types[0]);
+					if(fn){
+						types.push({
+							types: _types,
+							attr: attr,
+							constructor: fn
+						});
 					}
-					else {
-						console.error('cant find binding: ' + type);
+					else{
+						console.error('cant find binding: ' + attr.name);
 					}
 				}
 			};
+
+			//sort by priority
+			types.sort(function(a,b){
+				if(a.constructor.priority < b.constructor.priority){
+					return 1;
+				}
+				else if(a.constructor.priority > b.constructor.priority){
+					return -1;
+				}
+				else{
+					return 0;
+				}
+			})
+
+			//create the bindings
+			for (var i = 0; i < types.length; i++){
+				var t: any = types[i];
+
+				try{
+					bindingsCreated.push(bindingTypes.createBinding(t.types, node, t.attr.value));
+				}
+				catch(e){
+					console.error('failed to create binding: ' + t.attr.name);
+					console.error(e);
+				}
+			}
+
 			node.__bindings__ = bindingsCreated;
 			return bindingsCreated;
 		}

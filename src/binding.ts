@@ -5,6 +5,7 @@ module bindings{
 		public static id: string = '';
 		public expression: bindings.Expression;
 		public node: Node;
+		public static priority: number = 0;
 
 		public get scope(){
 			return this.node.__scope__;

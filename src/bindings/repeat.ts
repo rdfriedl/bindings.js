@@ -4,6 +4,7 @@
 module bindingTypes{
 	export class RepeatBinding extends bindings.OneWayBinding{
 		public static id: string = 'repeat';
+		public static priority: number = 1;
 		private children: Node[] = [];
 
 		constructor(node: HTMLElement, expression: string){

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Binding.js - {title}</title>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
+
+		<!-- binding lib -->
+		<script type="text/javascript" src="../dist/bindings.js"></script>
+	</head>
+	<body>
+		<div bind-text="title" bind-repeat="4">
+			<p>testing</p>
+		</div>
+	</body>
+
+	<script type="text/javascript">
+	myModal = {
+		title: 'Binding Order'
+	}
+
+	bindings.createModal(myModal);
+	bindings.applyBindings(myModal);
+	</script>
+</html>

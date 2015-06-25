@@ -4,6 +4,7 @@
 module bindingTypes{
 	export class WithBinding extends bindings.OneWayBinding{
 		public static id: string = 'with';
+		public static priority: number = 1;
 
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);

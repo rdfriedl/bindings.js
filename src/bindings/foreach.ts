@@ -4,6 +4,7 @@
 module bindingTypes{
 	export class ForEachBinding extends bindings.OneWayBinding{
 		public static id: string = 'foreach';
+		public static priority: number = 3;
 		private children: Node[] = [];
 
 		constructor(node: HTMLElement, expression: string){
