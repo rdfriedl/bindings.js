@@ -1,0 +1,11 @@
+{
+	"name": "bindings.js",
+	"version": "v0.1.2",
+	"devDependencies": {
+		"object.observe": "latest",
+		"grunt": "latest",
+		"grunt-typescript-compile": "latest",
+		"grunt-contrib-uglify": "latest",
+		"grunt-contrib-concat": "latest"
+	}
+}

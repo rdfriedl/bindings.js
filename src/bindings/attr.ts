@@ -1,6 +1,6 @@
 /// <reference path="../bindings.ts" />
 
-// bind-enabled
+// bind-attr-*
 module bindingTypes{
 	export class AttrBinding extends bindings.OneWayBinding{
 		public static id: string = 'attr';

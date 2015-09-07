@@ -1,6 +1,6 @@
 /// <reference path="../bindings.ts" />
 
-// bind-enabled
+// bind-class-*
 module bindingTypes{
 	export class ClassBinding extends bindings.OneWayBinding{
 		public static id: string = 'class';

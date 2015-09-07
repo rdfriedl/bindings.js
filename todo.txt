@@ -1,6 +1,7 @@
-- add muti bindings, like bind-event and bind-attr
-- fix bug where if the user uses a "&" or a "|" in there expression it will only bind to the first value ie. "array1.length > 0 && array2.length > 0" it will only bind to array1
-- fix bug with arrays, if you call array.push it dose not add an element to the array because its using a copy of the array
-- improve expression.run
-- add comment bindings
-- work on undefined bindings
+1: fix bug where if the user uses a "&" or a "|" in there expression it will only bind to the first value ie. "array1.length > 0 && array2.length > 0" it will only bind to array1
+2: fix bug with arrays, if you call array.push it dose not add an element to the array because its using a copy of the array
+3: improve expression.run, needs to run the expression on the original object and not a copy of it
+4: add comment bindings
+5: work on undefined bindings
+6: test bug with inline bindings in bind-foreach bindings
+7: fix examples/todo, todo.txt#3

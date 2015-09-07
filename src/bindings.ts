@@ -5,25 +5,26 @@
 /// <reference path="binding.ts" />
 /// <reference path="expression.ts" />
 //types
+/// <reference path="bindings/attr.ts" />
+/// <reference path="bindings/class.ts" />
 /// <reference path="bindings/click.ts" />
-/// <reference path="bindings/enabled.ts" />
 /// <reference path="bindings/disabled.ts" />
+/// <reference path="bindings/enabled.ts" />
+/// <reference path="bindings/event.ts" />
 /// <reference path="bindings/foreach.ts" />
+/// <reference path="bindings/href.ts" />
+/// <reference path="bindings/html.ts" />
 /// <reference path="bindings/if.ts" />
 /// <reference path="bindings/ifnot.ts" />
+/// <reference path="bindings/input.ts" />
 /// <reference path="bindings/repeat.ts" />
+/// <reference path="bindings/src.ts" />
+/// <reference path="bindings/style.ts" />
 /// <reference path="bindings/submit.ts" />
 /// <reference path="bindings/text.ts" />
 /// <reference path="bindings/value.ts" />
-/// <reference path="bindings/with.ts" />
-/// <reference path="bindings/html.ts" />
 /// <reference path="bindings/visible.ts" />
-/// <reference path="bindings/href.ts" />
-/// <reference path="bindings/src.ts" />
-/// <reference path="bindings/input.ts" />
-/// <reference path="bindings/attr.ts" />
-/// <reference path="bindings/class.ts" />
-/// <reference path="bindings/style.ts" />
+/// <reference path="bindings/with.ts" />
 
 module bindings {
 	export function createModal(object:any = {},options:any = {}){
@@ -98,7 +99,12 @@ module bindings {
 	}
 }
 
-interface ObjectConstructor  {
+interface ObjectConstructor{
+	unobserve(beingObserved: any, callback: (update: any) => any) : void;
+	observe(beingObserved: any, callback: (update: any) => any) : void;
+}
+
+interface Object{
 	unobserve(beingObserved: any, callback: (update: any) => any) : void;
 	observe(beingObserved: any, callback: (update: any) => any) : void;
 }
