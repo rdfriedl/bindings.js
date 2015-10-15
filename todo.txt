@@ -5,3 +5,6 @@
 5: work on undefined bindings
 6: test bug with inline bindings in bind-foreach bindings
 7: fix examples/todo, todo.txt#3
+8: dont allow expresions in two way bindings
+9: create new type of binding, NodeBinding, it will effect the children nodes
+10: add a flag to expresions, for testing weather they are complext or simple

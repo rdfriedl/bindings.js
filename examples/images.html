@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title bind-text="'Bindings - '+title"></title>
+
+		<!-- pollyfill for firefox & IE -->
+		<script type="text/javascript" src="http://rawgit.com/MaxArt2501/object-observe/master/dist/object-observe.min.js"></script>
+
+		<!-- binding lib -->
+		<script type="text/javascript" src="../dist/bindings.js"></script>
+	</head>
+	<body>
+		<h1>Google logo<small>bind-src</small></h1>
+		<input type="url" bind-value="input"/>
+		<button bind-click="load">load</button>
+		<br>
+		<img bind-src="image">
+
+		<script type="text/javascript">
+			myModal = {
+				title: 'images',
+				input: 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png',
+				load: function(){
+					this.image = this.input;
+				}
+			}
+
+			bindings.createModal(myModal);
+			bindings.applyBindings(myModal,document);
+		</script>
+	</body>
+</html>

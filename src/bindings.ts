@@ -1,4 +1,5 @@
 /// <reference path="eventEmiter.ts" />
+/// <reference path="utils.ts" />
 /// <reference path="modal.ts" />
 /// <reference path="scope.ts" />
 /// <reference path="value.ts" />
@@ -24,6 +25,7 @@
 /// <reference path="bindings/text.ts" />
 /// <reference path="bindings/value.ts" />
 /// <reference path="bindings/visible.ts" />
+/// <reference path="bindings/hidden.ts" />
 /// <reference path="bindings/with.ts" />
 
 module bindings {

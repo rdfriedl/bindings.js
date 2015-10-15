@@ -13,7 +13,7 @@ module bindingTypes{
 		public run(){
 			super.run();
 			
-			this.node.setAttribute('href', this.expression.value);
+			bindings.utils.setAttr(this.node, 'href', this.expression.value);
 		}
 	}
 }

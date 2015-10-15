@@ -13,7 +13,7 @@ module bindingTypes{
 		public run(){
 			super.run();
 			
-			this.node.setAttribute('src', this.expression.value);
+			bindings.utils.setAttr(this.node, 'src', this.expression.value);
 		}
 	}
 }

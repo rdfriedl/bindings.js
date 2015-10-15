@@ -782,6 +782,19 @@ var EventEmiter = (function () {
     };
     return EventEmiter;
 })();
+var bindings;
+(function (bindings) {
+    (function (utils) {
+        function setAttr(el, attr, value) {
+            if (value != null)
+                el.setAttribute(attr, value);
+            else
+                el.removeAttribute(attr);
+        }
+        utils.setAttr = setAttr;
+    })(bindings.utils || (bindings.utils = {}));
+    var utils = bindings.utils;
+})(bindings || (bindings = {}));
 /// <reference path="bindings.ts" />
 var bindings;
 (function (bindings) {
@@ -1262,6 +1275,9 @@ var bindings;
             this.domEvents = [];
             this.dontUpdate = false;
 
+            //update the node
+            this.run();
+
             this.bindEvents();
         }
         TwoWayBinding.prototype.change = function (event) {
@@ -1312,6 +1328,11 @@ var bindings;
         }
         EventBinding.prototype.change = function (event) {
             this.expression.run();
+
+            if (this.expression.value instanceof Function && this.scope) {
+                //run it on the scope
+                this.expression.value.call(this.scope.object, event);
+            }
         };
 
         EventBinding.prototype.unbind = function () {
@@ -1652,7 +1673,7 @@ var bindingTypes;
         AttrBinding.prototype.run = function () {
             _super.prototype.run.call(this);
 
-            this.node.setAttribute(this.attr, this.expression.value);
+            bindings.utils.setAttr(this.node, this.attr, this.expression.value);
         };
         AttrBinding.id = 'attr';
         return AttrBinding;
@@ -1858,7 +1879,7 @@ var bindingTypes;
         HrefBinding.prototype.run = function () {
             _super.prototype.run.call(this);
 
-            this.node.setAttribute('href', this.expression.value);
+            bindings.utils.setAttr(this.node, 'href', this.expression.value);
         };
         HrefBinding.id = 'href';
         return HrefBinding;
@@ -2086,7 +2107,7 @@ var bindingTypes;
         SrcBinding.prototype.run = function () {
             _super.prototype.run.call(this);
 
-            this.node.setAttribute('src', this.expression.value);
+            bindings.utils.setAttr(this.node, 'src', this.expression.value);
         };
         SrcBinding.id = 'src';
         return SrcBinding;
@@ -2179,6 +2200,7 @@ var bindingTypes;
         };
         ValueBinding.prototype.change = function (event) {
             _super.prototype.change.call(this, event);
+
             var value = this.expression.runOnScope().value;
             if (value instanceof bindings.Value) {
                 value.updateValue(this.node.value);
@@ -2214,6 +2236,30 @@ var bindingTypes;
     bindingTypes.VisibleBinding = VisibleBinding;
 })(bindingTypes || (bindingTypes = {}));
 /// <reference path="../bindings.ts" />
+// bind-hidden
+var bindingTypes;
+(function (bindingTypes) {
+    var HiddenBinding = (function (_super) {
+        __extends(HiddenBinding, _super);
+        function HiddenBinding(node, expression) {
+            _super.call(this, node, expression);
+            this.run();
+        }
+        HiddenBinding.prototype.run = function () {
+            _super.prototype.run.call(this);
+
+            if (this.expression.value) {
+                this.node.style.display = 'none';
+            } else {
+                this.node.style.display = '';
+            }
+        };
+        HiddenBinding.id = 'hidden';
+        return HiddenBinding;
+    })(bindings.OneWayBinding);
+    bindingTypes.HiddenBinding = HiddenBinding;
+})(bindingTypes || (bindingTypes = {}));
+/// <reference path="../bindings.ts" />
 // bind-with
 var bindingTypes;
 (function (bindingTypes) {
@@ -2243,6 +2289,7 @@ var bindingTypes;
     bindingTypes.WithBinding = WithBinding;
 })(bindingTypes || (bindingTypes = {}));
 /// <reference path="eventEmiter.ts" />
+/// <reference path="utils.ts" />
 /// <reference path="modal.ts" />
 /// <reference path="scope.ts" />
 /// <reference path="value.ts" />
@@ -2268,6 +2315,7 @@ var bindingTypes;
 /// <reference path="bindings/text.ts" />
 /// <reference path="bindings/value.ts" />
 /// <reference path="bindings/visible.ts" />
+/// <reference path="bindings/hidden.ts" />
 /// <reference path="bindings/with.ts" />
 var bindings;
 (function (bindings) {

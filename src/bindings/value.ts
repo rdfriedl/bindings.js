@@ -16,6 +16,7 @@ module bindingTypes{
 		}
 		public change(event:Event){
 			super.change(event);
+
 			var value = this.expression.runOnScope().value;
 			if(value instanceof bindings.Value){
 				value.updateValue(this.node.value);

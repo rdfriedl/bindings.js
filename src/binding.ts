@@ -33,14 +33,14 @@ module bindings{
 			this.updateDependencies();
 		}
 
-		public dependencyChange(){
+		public dependencyChange() {
 			if(this.updateDependenciesOnChange){
 				this.updateDependencies(); //todo: for some reason this freezes the page...?
 			}
 			this.run();
 		}
 
-		public run(){
+		public run(){ //this is called when the expresion changes
 			super.run();
 			this.expression.run();
 
@@ -87,10 +87,13 @@ module bindings{
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 
+			//update the node
+			this.run();
+
 			this.bindEvents();
 		}
 
-		public change(event:Event){
+		public change(event:Event){ //this is called when the dom changes
 			this.dontUpdate = true; //dont update (call this.run) the node
 		}
 
@@ -136,6 +139,11 @@ module bindings{
 
 		public change(event:Event){
 			this.expression.run();
+
+			if(this.expression.value instanceof Function && this.scope){
+				//run it on the scope
+				this.expression.value.call(this.scope.object, event);
+			}
 		}
 
 		public unbind(){
