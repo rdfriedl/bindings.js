@@ -1,12 +1,17 @@
 /// <reference path="../bindings.ts" />
 
-// bind-foreach
 module bindingTypes{
 	export class ForEachBinding extends bindings.OneWayBinding{
 		public static id: string = 'foreach';
 		public static priority: number = 3;
 		private children: Node[] = [];
 
+		/**
+			@constructs bindingTypes.ForEachBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 			for (var i = 0; i < this.node.childNodes.length; i++){
@@ -17,18 +22,24 @@ module bindingTypes{
 			this.run();
 		}
 
+		/** @private */
 		private restoreChildren(){
 			for(var i in this.children){
 				this.node.appendChild(this.children[i]);
 			}
 		}
 
+		/** @private */
 		private removeAllChildren(){
 			while (this.node.childNodes.length !== 0) {
 			    this.node.removeChild(this.node.childNodes[0]);
 			}
 		}
 
+		/**
+			@override
+			@public
+		*/
 		public run(){
 			// super.run(); dont run because we arnt going to use .run on are expression
 			var scope: bindings.Scope = this.expression.runOnScope().value;
@@ -54,6 +65,10 @@ module bindingTypes{
 			}
 		}
 
+		/**
+			@override
+			@public
+		*/
 		public unbind(){
 			this.removeAllChildren();
 			super.unbind();

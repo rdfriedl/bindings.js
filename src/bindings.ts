@@ -28,14 +28,32 @@
 /// <reference path="bindings/hidden.ts" />
 /// <reference path="bindings/with.ts" />
 
+/**
+	@namespace bindings
+*/
 module bindings {
-	export function createModal(object:any = {},options:any = {}){
-		var modal: bindings.Modal = new bindings.Modal(object, options);
+	/**
+		creates a {@link bindings.Modal} from a Object
+		@func createModal
+		@memberof bindings
+		@arg {Object} modal - the object that this modal will use
+		@arg {Object} options - a object that contains some options
+		@see {@link bindings.Modal}
+		@returns {@link Bindings.Modal}
+	*/
+	export function createModal(modalObject:any = {},options:any = {}){
+		var modal: bindings.Modal = new bindings.Modal(modalObject, options);
 
-		object._bindings = modal;
+		modalObject._bindings = modal;
 
 		return modal;
 	}
+	/**
+		@func createModal
+		@memberof bindings
+		@arg {bindings.Modal} modal - the modal to use when applying bindings to the html
+		@arg {Node} node - the html element
+	*/
 	export function applyBindings(modal:any = {},node:any = document): void{
 		if(modal instanceof bindings.Modal){
 			modal.applyBindings(node)
@@ -79,12 +97,12 @@ module bindings {
 		}
 	}
 	export function noop():void{}
-	export function clone(obj){
+	export function clone(obj: any){
 		if(typeof obj == 'object'){
 			return JSON.parse(JSON.stringify(obj));
 		}
 	}
-	export function extend(obj,obj2){
+	export function extend(obj: any,obj2: any){
 		obj = obj || {};
 		obj2 = obj2 || {};
 		for(var i in obj2){

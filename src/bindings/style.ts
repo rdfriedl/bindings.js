@@ -1,15 +1,22 @@
 /// <reference path="../bindings.ts" />
 
-// bind-style-[style]
 module bindingTypes{
 	export class StyleBinding extends bindings.OneWayBinding{
 		public static id: string = 'style';
 
+		/**
+			@constructs bindingTypes.StyleBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@arg {string} style
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string, public style: string){
 			super(node, expression);
 			this.run();
 		}
 
+		/** @override */
 		public run(){
 			super.run();
 			

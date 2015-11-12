@@ -1,11 +1,16 @@
 /// <reference path="../bindings.ts" />
 
-// bind-if
 module bindingTypes{
 	export class IfBinding extends bindings.OneWayBinding{
 		public static id: string = 'if';
 		private children: HTMLElement[] = [];
 
+		/**
+			@constructs bindingTypes.IfBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 			for (var i = 0; i < this.node.children.length; i++){
@@ -15,18 +20,24 @@ module bindingTypes{
 			this.run();
 		}
 
+		/** @private */
 		private restoreChildren(){
 			for(var i in this.children){
 				this.node.appendChild(this.children[i]);
 			}
 		}
 
+		/** @private */
 		private removeChildren(){
 			while (this.node.children.length !== 0) {
 			    this.node.removeChild(this.node.children[0]);
 			}
 		}
 
+		/**
+			@override
+			@public
+		*/
 		public run(){
 			super.run();
 			
@@ -38,6 +49,10 @@ module bindingTypes{
 			}
 		}
 
+		/**
+			@override
+			@public
+		*/
 		public unbind(){
 			super.unbind();
 			this.removeChildren();

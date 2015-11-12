@@ -1,8 +1,16 @@
 /// <reference path="bindings.ts" />
 
 module bindings {
-	export class Scope extends EventEmiter {
+	export class Scope extends bindings.EventEmiter {
 		public values: any;
+		/**
+			@constructs bindings.Scope
+			@arg {string} key
+			@arg {object} object
+			@arg {bindings.Modal} modal
+			@arg {bindings.Scope} [parent]
+			@extends bindings.EventEmiter
+		*/
 		constructor(public key: string, public object: Object, public modal: bindings.Modal, public parent:bindings.Scope = undefined) {
 			super();
 
@@ -66,7 +74,11 @@ module bindings {
 			this.emit('change',this.object);
 		}
 
-		private objectChange(data:any){ //called when the object changes
+		/**
+			called when the object changes
+			@private
+		*/
+		private objectChange(data:any){
 			for (var i = 0; i < data.length; i++) {
 				if(data[i].name == '_bindings') continue;
 
@@ -87,6 +99,12 @@ module bindings {
 			// this.update(); dont update at end, only update if a key is delete/added
 		}
 
+		/**
+			@override
+			@arg {string} event
+			@arg {*} [data]
+			@arg {string} [direction]
+		*/
 		public emit(event: string, data: any = undefined,direction: string = ''){
 			super.emit(event, data);
 

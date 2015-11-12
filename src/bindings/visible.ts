@@ -1,15 +1,21 @@
 /// <reference path="../bindings.ts" />
 
-// bind-visible
 module bindingTypes{
 	export class VisibleBinding extends bindings.OneWayBinding{
 		public static id: string = 'visible';
 
+		/**
+			@constructs bindingTypes.VisibleBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 			this.run();
 		}
 
+		/** @override */
 		public run(){
 			super.run();
 			

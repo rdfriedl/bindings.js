@@ -1,9 +1,15 @@
 /// <reference path="../bindings.ts" />
 
-// bind-click
 module bindingTypes{
-	export class ClickBinding extends bindings.EventBinding{
+	export class ClickBinding extends bindings.EventBinding {
 		public static id: string = 'click';
+		
+		/**
+			@constructs bindingTypes.ClickBinding
+			@extends bindings.EventBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 

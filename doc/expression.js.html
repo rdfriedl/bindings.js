@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Bindings.js Source: expression.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.dark.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.superhero.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">Bindings.js</a>
+	</div>
+	<div class="navbar-collapse">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="namespaces.list.html" class="dropdown-toggle" data-toggle="dropdown">Namespaces<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="bindings.html">bindings</a></li><li><a href="bindings.utils.html">bindings.utils</a></li><li><a href="bindingTypes.html">bindingTypes</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="bindings.Binding.html">bindings.Binding</a></li><li><a href="bindings.EventBinding.html">bindings.EventBinding</a></li><li><a href="bindings.EventEmiter.html">bindings.EventEmiter</a></li><li><a href="bindings.Expression.html">bindings.Expression</a></li><li><a href="bindings.InlineBinding.html">bindings.InlineBinding</a></li><li><a href="bindings.Modal.html">bindings.Modal</a></li><li><a href="bindings.OneWayBinding.html">bindings.OneWayBinding</a></li><li><a href="bindings.Scope.html">bindings.Scope</a></li><li><a href="bindings.TwoWayBinding.html">bindings.TwoWayBinding</a></li><li><a href="bindings.Value.html">bindings.Value</a></li><li><a href="bindingTypes.AttrBinding.html">bindingTypes.AttrBinding</a></li><li><a href="bindingTypes.ClassBinding.html">bindingTypes.ClassBinding</a></li><li><a href="bindingTypes.ClickBinding.html">bindingTypes.ClickBinding</a></li><li><a href="bindingTypes.DisabledBinding.html">bindingTypes.DisabledBinding</a></li><li><a href="bindingTypes.EnabledBinding.html">bindingTypes.EnabledBinding</a></li><li><a href="bindingTypes.EventBinding.html">bindingTypes.EventBinding</a></li><li><a href="bindingTypes.ForEachBinding.html">bindingTypes.ForEachBinding</a></li><li><a href="bindingTypes.HiddenBinding.html">bindingTypes.HiddenBinding</a></li><li><a href="bindingTypes.HrefBinding.html">bindingTypes.HrefBinding</a></li><li><a href="bindingTypes.HTMLBinding.html">bindingTypes.HTMLBinding</a></li><li><a href="bindingTypes.IfBinding.html">bindingTypes.IfBinding</a></li><li><a href="bindingTypes.IfNotBinding.html">bindingTypes.IfNotBinding</a></li><li><a href="bindingTypes.InputBinding.html">bindingTypes.InputBinding</a></li><li><a href="bindingTypes.SrcBinding.html">bindingTypes.SrcBinding</a></li><li><a href="bindingTypes.StyleBinding.html">bindingTypes.StyleBinding</a></li><li><a href="bindingTypes.SubmitBinding.html">bindingTypes.SubmitBinding</a></li><li><a href="bindingTypes.TextBinding.html">bindingTypes.TextBinding</a></li><li><a href="bindingTypes.ValueBinding.html">bindingTypes.ValueBinding</a></li><li><a href="bindingTypes.VisibleBinding.html">bindingTypes.VisibleBinding</a></li><li><a href="bindingTypes.WithBinding.html">bindingTypes.WithBinding</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="tutorials.list.html" class="dropdown-toggle" data-toggle="dropdown">Tutorials<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="tutorial-bind-attr.html">bind-attr</a></li><li><a href="tutorial-bind-class.html">bind-class</a></li><li><a href="tutorial-bind-disabled.html">bind-disabled</a></li><li><a href="tutorial-bind-text.html">bind-text</a></li><li><a href="tutorial-getting started.html">getting started</a></li><li><a href="tutorial-inline bindings.html">inline bindings</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+</div>
+
+
+<div class="container">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+    		<h1 class="page-title">Source: expression.js</h1>
+			
+
+		<h1 class="page-title">Source: expression.js</h1>
+    
+<section>
+	<article>
+		<pre
+			class="sunlight-highlight-javascript linenums">/// &lt;reference path="bindings.ts" />
+var bindings;
+(function (bindings) {
+    var Expression = (function () {
+        /**
+        @constructs bindings.Expression
+        @arg {node} node - the node to use for this expression
+        @arg {string} expression
+        @arg {bindings.Scope} scope
+        */
+        function Expression(node, expression, scope) {
+            this.node = node;
+            this.expression = expression;
+            this.scope = scope;
+            this.success = true;
+            this.value = undefined;
+            this.dependencies = [];
+        }
+        /**
+        @public
+        */
+        Expression.prototype.run = function () {
+            var data = {
+                value: undefined,
+                success: true,
+                error: undefined
+            };
+            var variables = {
+                $node: this.node
+            };
+
+            var funcString = 'new Function("variables","addedScope","', args = [];
+            var context = this.buildContext(this.scope).context;
+            args.push(variables);
+            args.push(this.node.__addedScope__ || {});
+
+            funcString += 'with(this){';
+            funcString += 'with(variables){';
+            funcString += 'with(addedScope){';
+            funcString += 'return ';
+            funcString += this.expression;
+            funcString += '}';
+            funcString += '}';
+            funcString += '}';
+            funcString += '")';
+            var func = eval(funcString);
+
+            try  {
+                data.value = func.apply(context, args);
+            } catch (e) {
+                data.success = false;
+                data.error = e;
+            }
+
+            this.value = data.value;
+            this.success = data.success;
+
+            return data;
+        };
+
+        Expression.prototype.runOnScope = function () {
+            var data = {
+                value: undefined,
+                success: false
+            };
+            var _data = this.getDependencies();
+            data.value = _data.gets[_data.gets.length - 1];
+            data.success = !!data.value;
+            return data;
+        };
+
+        Expression.prototype.getDependencies = function () {
+            var data = {
+                success: true,
+                error: undefined,
+                requires: [],
+                gets: [],
+                sets: []
+            };
+            var hidden = {
+                console: {},
+                window: {},
+                navigator: {},
+                localStorage: {},
+                location: {},
+                alert: bindings.noop,
+                eval: bindings.noop
+            };
+
+            var variables = {
+                $node: this.node
+            };
+
+            var funcString = 'new Function("hidden","variables","addedScope",', args = [];
+
+            args.push(hidden);
+            args.push(variables);
+            args.push(this.node.__addedScope__ || {});
+
+            //build context
+            var context = this.buildContext(this.scope, data, true);
+
+            funcString += '"';
+            funcString += 'with(this){';
+            funcString += 'with(hidden){';
+            funcString += 'with(variables){';
+            funcString += 'with(addedScope){';
+            funcString += 'return ';
+            funcString += this.expression;
+            funcString += '}';
+            funcString += '}';
+            funcString += '}';
+            funcString += '}';
+            funcString += '")';
+            var func = eval(funcString);
+
+            try  {
+                func.apply(context.context, args);
+            } catch (e) {
+                data.success = false;
+                data.error = e;
+            }
+
+            this.dependencies = data.requires;
+
+            return data;
+        };
+
+        Expression.prototype.buildContext = function (scope, requires, dontSet) {
+            if (typeof requires === "undefined") { requires = { requires: [], gets: [], sets: [] }; }
+            if (typeof dontSet === "undefined") { dontSet = false; }
+            var object = (scope.object instanceof Array) ? [] : {};
+            var get = function (scope, object, index, requires) {
+                if (requires.gets.indexOf(scope.values[index]) == -1) {
+                    requires.requires.push(scope.values[index]);
+                    requires.gets.push(scope.values[index]);
+                }
+
+                if (scope.values[index] instanceof bindings.Scope) {
+                    return this.buildContext(scope.values[index], requires, dontSet).context;
+                } else if (scope.values[index] instanceof bindings.Value) {
+                    if (!(scope.values[index].value instanceof Function) || !dontSet) {
+                        return scope.values[index].value;
+                    }
+                }
+            };
+            var set = function (scope, object, index, requires, val) {
+                requires.requires.push(scope.values[index]);
+                requires.sets.push(scope.values[index]);
+
+                if (!dontSet) {
+                    scope.object[index] = val;
+                }
+            };
+
+            for (var i in scope.values) {
+                object.__defineGetter__(i, get.bind(this, scope, object, i, requires));
+                object.__defineSetter__(i, set.bind(this, scope, object, i, requires));
+            }
+            ;
+
+            //$parent
+            if (scope.parent) {
+                object.__defineGetter__('$parent', function (scope, object, requires, dontSet) {
+                    if (!scope.parent)
+                        return;
+
+                    if (requires.gets.indexOf(scope.parent) == -1) {
+                        requires.requires.push(scope.parent);
+                        requires.gets.push(scope.parent);
+                    }
+
+                    return this.buildContext(scope.parent, requires, dontSet).context;
+                }.bind(this, scope, object, requires, dontSet));
+            } else {
+                object.$parent = undefined;
+            }
+
+            // $Modal
+            if (scope.modal) {
+                object.__defineGetter__('$modal', function (scope, object, requires, dontSet) {
+                    if (!scope.modal)
+                        return;
+
+                    if (requires.gets.indexOf(scope.modal.scope) == -1) {
+                        requires.requires.push(scope.modal.scope);
+                        requires.gets.push(scope.modal.scope);
+                    }
+
+                    return this.buildContext(scope.modal.scope, requires, dontSet).context;
+                }.bind(this, scope, object, requires, dontSet));
+            } else {
+                object.$modal = undefined;
+            }
+
+            return {
+                context: object,
+                requires: requires
+            };
+        };
+        return Expression;
+    })();
+    bindings.Expression = Expression;
+})(bindings || (bindings = {}));
+</pre>
+	</article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+
+<footer>
+
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.3</a>
+	on 2015-11-12T11:53:39-06:00 using the <a
+	href="https://github.com/terryweiss/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<!--<script src="scripts/sunlight.js"></script>-->
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/bootstrap-dropdown.js"></script>
+<script src="scripts/toc.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			return $( heading ).attr( "id" ) || ( prefix + i );
+		},
+		selectors   : "h1,h2,h3,h4",
+		showAndHide : false,
+		scrollTo    : "100px"
+	} );
+
+	$( "#toc>ul" ).addClass( "nav nav-pills nav-stacked" );
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+	//			$( ".tutorial-section pre, .readme-section pre" ).addClass( "sunlight-highlight-javascript" ).addClass( "linenums" );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			lang = "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+</body>
+</html>

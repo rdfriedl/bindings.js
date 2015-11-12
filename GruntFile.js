@@ -5,11 +5,17 @@ module.exports = function(grunt){
 			options: {
       			module: 'commonJS',
 		        removeComments: false,
-		        target: "ES5",
-		        out: "dist/bindings.js"
+		        target: "ES5"
 			},
 			dist: {
-				src: "src/bindings.ts"
+				src: "src/bindings.ts",
+		        options: {
+		        	out: "dist/bindings.js"
+		        }
+			},
+			src: {
+				src: "src/bindings.ts",
+				dest: "build/"
 			}
 		},
 		uglify: {
@@ -28,13 +34,24 @@ module.exports = function(grunt){
 				src: ['node_modules/object.observe/dist/object-observe.js','dist/bindings.js'],
 				dest: 'dist/bindings-bundle.js'
 			}
-		}
+		},
+	    jsdoc: {
+	        dist: {
+	            src: ['build/**/*.js'],
+	            options: {
+	                destination: 'doc',
+	                configure: 'conf.json'
+	            }
+	        }
+	    }
 	})
 
 	grunt.loadNpmTasks('grunt-typescript-compile');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-concat');
+	grunt.loadNpmTasks('grunt-jsdoc');
 
 	grunt.registerTask('default',['typescript:dist','concat:dist','uglify:dist']);
-	grunt.registerTask('tsBuild',['typescript:dist']);
+	grunt.registerTask('build',['typescript:dist','concat:dist','uglify:dist']);
+	grunt.registerTask('docs',['typescript:src','jsdoc:dist']);
 }

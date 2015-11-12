@@ -1,15 +1,24 @@
 /// <reference path="../bindings.ts" />
 
-// bind-disabled
 module bindingTypes{
 	export class DisabledBinding extends bindings.OneWayBinding{
 		public static id: string = 'disabled';
 
+		/**
+			@constructs bindingTypes.DisabledBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 			this.run();
 		}
 
+		/**
+			@public
+			@overrid
+		*/
 		public run(){
 			super.run();
 			

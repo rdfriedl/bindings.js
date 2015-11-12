@@ -1,11 +1,17 @@
 {
-	"name": "bindings.js",
-	"version": "v0.1.2",
-	"devDependencies": {
-		"object.observe": "latest",
-		"grunt": "latest",
-		"grunt-typescript-compile": "latest",
-		"grunt-contrib-uglify": "latest",
-		"grunt-contrib-concat": "latest"
-	}
+  "name": "bindings.js",
+  "version": "v0.1.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rdfriedl/bindings.js.git"
+  },
+  "devDependencies": {
+    "grunt": "latest",
+    "grunt-contrib-concat": "latest",
+    "grunt-contrib-uglify": "latest",
+    "grunt-jsdoc": "^1.0.0",
+    "grunt-typescript-compile": "latest",
+    "ink-docstrap": "^0.5.2",
+    "object.observe": "latest"
+  }
 }

@@ -2,19 +2,50 @@
 
 module bindings{
 	export class Binding {
+		/**
+			@public
+			@static
+			@member
+			@type {string}
+		*/
 		public static id: string = '';
+		/**
+			@public
+			@member
+			@type {bindings.Expression}
+		*/
 		public expression: bindings.Expression;
+		/**
+			@public
+			@member
+			@type {node}
+		*/
 		public node: Node;
+		/**
+			@public
+			@static
+			@member
+			@type {Number}
+		*/
 		public static priority: number = 0;
-
+		/**
+			@public
+			@member
+			@readonly
+			@memberof bindings.Binding
+			@type {bindings.Scope}
+		*/
 		public get scope(){
 			return this.node.__scope__;
 		}
 
+		/**
+			@constructs bindings.Binding
+		*/
 		constructor() {
 
 		}
-
+		
 		public run(){
 
 		}
@@ -24,8 +55,26 @@ module bindings{
 		}
 	}
 	export class OneWayBinding extends bindings.Binding{
+		/**
+			a list of scopes or values this binding is listening to
+			@public
+			@member
+			@type {bindings.Scope|bindings.Value}
+		*/
 		private dependencies: any[] = []; //a list of scopes and values this bindings uses
+		/**
+			@public
+			@member
+			@type {boolean}
+		*/
 		private updateDependenciesOnChange: boolean = false;
+
+		/**
+			@constructs bindings.OneWayBinding
+			@extends bindings.Binding
+			@arg {Node} node - the html node to use in the binding
+			@arg {String} expression - the expression to use for this binding
+		*/
 		constructor(public node: HTMLElement, expression: string){
 			super();
 			this.expression = new bindings.Expression(node, expression, this.scope);
@@ -33,14 +82,23 @@ module bindings{
 			this.updateDependencies();
 		}
 
+		/**
+			this is called when one of the {@link bindings.OneWayBinding#dependencies dependencies} change
+			@public
+		*/
 		public dependencyChange() {
 			if(this.updateDependenciesOnChange){
-				this.updateDependencies(); //todo: for some reason this freezes the page...?
+				this.updateDependencies();
 			}
 			this.run();
 		}
 
-		public run(){ //this is called when the expresion changes
+		/** 
+			this is called when the expresion changes 
+			@public
+			@override
+		*/
+		public run(){
 			super.run();
 			this.expression.run();
 
@@ -51,10 +109,18 @@ module bindings{
 			}
 		}
 
-		public unbind(){ //remove every thing
+		/** 
+			unbinds the binding from the html node
+			@public
+			@override
+		*/
+		public unbind(){
 			this.unbindDependencies();
 		}
 
+		/**
+			@public
+		*/
 		public getDependencies(refresh: boolean = false): any[]{
 			if(refresh || this.dependencies == undefined){
 				//get dependencies
@@ -84,6 +150,13 @@ module bindings{
 	export class TwoWayBinding extends bindings.OneWayBinding{
 		public domEvents: string[] = []; //add events to this list to bind to them
 		private dontUpdate: boolean = false;
+
+		/**
+			@constructs bindings.TwoWayBinding TwoWayBinding
+			@extends bindings.OneWayBinding
+			@arg {Node} node - the html node to use in the binding
+			@arg {String} expression - the expression to use for this binding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 
@@ -93,10 +166,18 @@ module bindings{
 			this.bindEvents();
 		}
 
-		public change(event:Event){ //this is called when the dom changes
+		/**
+			this is called when the dom changes
+			@arg {Event} event - the event
+		*/
+		public change(event:Event){
 			this.dontUpdate = true; //dont update (call this.run) the node
 		}
 
+		/**
+			@public
+			@override
+		*/
 		public dependencyChange(){
 			if(!this.dontUpdate){
 				super.dependencyChange();
@@ -104,6 +185,10 @@ module bindings{
 			this.dontUpdate = false;
 		}
 
+		/**
+			@public
+			@override
+		*/
 		public unbind(){
 			super.unbind();
 
@@ -130,6 +215,12 @@ module bindings{
 	export class EventBinding extends bindings.Binding{
 		public domEvents: string[] = [];
 
+		/**
+			@constructs bindings.EventBinding EventBinding
+			@extends bindings.Binding
+			@arg {Node} node - the html node to use in the binding
+			@arg {String} expression - the expression to use for this binding
+		*/
 		constructor(public node: HTMLElement, expression: string){
 			super();
 			this.expression = new bindings.Expression(node, expression, this.scope);
@@ -146,6 +237,10 @@ module bindings{
 			}
 		}
 
+		/**
+			@public
+			@override
+		*/
 		public unbind(){
 			super.unbind();
 
@@ -178,6 +273,11 @@ module bindings{
 			return this.node.__scope__;
 		}
 
+		/**
+			@constructs bindings.InlineBinding InlineBinding
+			@extends bindings.Binding
+			@arg {Node} node - the html node to use in the binding
+		*/
 		constructor(public node: Node){
 			super();
 			this.expression = new bindings.Expression(node, <string> node.nodeValue, this.scope);
@@ -188,11 +288,15 @@ module bindings{
 
 		public dependencyChange(){
 			if(this.updateDependenciesOnChange){
-				this.updateDependencies(); //todo: for some reason this freezes the page...?
+				this.updateDependencies();
 			}
 			this.run();
 		}
 
+		/**
+			@public
+			@override
+		*/
 		public run(){
 			this.expression.run();
 
@@ -205,6 +309,10 @@ module bindings{
 			}
 		}
 
+		/**
+			@public
+			@override
+		*/
 		public unbind(){ //remove every thing
 			this.unbindDependencies();
 		}
@@ -237,7 +345,15 @@ module bindings{
 	}
 }
 
-module bindingTypes{
+/**
+	@namespace bindingTypes
+*/
+module bindingTypes {
+	/**
+		@func getBinding
+		@memberof bindingTypes
+		@arg {string} type - the type of binding
+	*/
 	export function getBinding(type: string){
 		var binding: bindings.Binding;
 		for(var i in this){
@@ -247,6 +363,15 @@ module bindingTypes{
 		}
 		return binding;
 	}
+	/**
+		create a binding with type that is attached to the node
+		@func getBinding
+		@memberof bindingTypes
+		@arg {string[]|string} type - the type of binding
+		@arg {Node} node - the html node
+		@arg {string} expresion - the expresion for this binding to use
+		@return binding.Binding
+	*/
 	export function createBinding(type: any, node: HTMLElement, expression: string): bindings.Binding {
 		if (!(type instanceof Array)) {
 			type = [type];

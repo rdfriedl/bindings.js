@@ -1,12 +1,17 @@
 /// <reference path="../bindings.ts" />
 
-// bind-repeat
 module bindingTypes{
 	export class RepeatBinding extends bindings.OneWayBinding{
 		public static id: string = 'repeat';
 		public static priority: number = 1;
 		private children: Node[] = [];
 
+		/**
+			@constructs bindingTypes.InputBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 			for (var i = 0; i < this.node.childNodes.length; i++){
@@ -17,18 +22,20 @@ module bindingTypes{
 			this.run();
 		}
 
+		/** @private */
 		private restoreChildren(){
 			for(var i in this.children){
 				this.node.appendChild(this.children[i]);
 			}
 		}
-
+		/** @private */
 		private removeChildren(){
 			while (this.node.childNodes.length !== 0) {
 			    this.node.removeChild(this.node.childNodes[0]);
 			}
 		}
 
+		/** @override */
 		public run(){
 			super.run();
 			this.removeChildren();
@@ -46,7 +53,7 @@ module bindingTypes{
 				};
 			};
 		}
-
+		/** @override */
 		public unbind(){
 			this.removeChildren();
 			super.unbind();

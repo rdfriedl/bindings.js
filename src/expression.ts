@@ -6,10 +6,19 @@ module bindings{
 		public value: any = undefined;
 		public dependencies: any[] = [];
 
+		/**
+			@constructs bindings.Expression
+			@arg {node} node - the node to use for this expression
+			@arg {string} expression
+			@arg {bindings.Scope} scope
+		*/
 		constructor(public node: Node, public expression:any, public scope:bindings.Scope){
 
 		}
 
+		/**
+			@public
+		*/
 		public run():any{
 			var data: any = {
 				value: undefined,

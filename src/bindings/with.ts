@@ -1,17 +1,23 @@
 /// <reference path="../bindings.ts" />
 
-// bind-with
 module bindingTypes{
 	export class WithBinding extends bindings.OneWayBinding{
 		public static id: string = 'with';
 		public static priority: number = 1;
 
+		/**
+			@constructs bindingTypes.WithBinding
+			@arg {HTMLElement} node
+			@arg {string} expression
+			@extends bindings.OneWayBinding
+		*/
 		constructor(node: HTMLElement, expression: string){
 			super(node, expression);
 			this.run();
 		}
 
-		run(){
+		/** @override */
+		public run(){
 			// super.run(); dont run because we arnt going to use .run on are expression
 			var scope: bindings.Scope = this.expression.runOnScope().value;
 

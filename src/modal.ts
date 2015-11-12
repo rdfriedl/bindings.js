@@ -2,8 +2,23 @@
 
 module bindings{
 	export class Modal {
+		/**
+			ths scope for this modal
+			@member
+			@type {bindings.Scope}
+		*/
 		public scope: bindings.Scope;
+		/**
+			an array of bindings for this modal
+			@member
+			@type {bindings.Binding[]}
+		*/
 		public bindings: bindings.Binding[] = [];
+
+		/**
+			@property {Object} options - options for this modal
+			@property {Object} options.prefix=bind - the prefix this modal will use
+		*/
 		public options: any = {
 			prefix: 'bind',
 			inlineDelimiters: ['{','}'],
@@ -15,6 +30,13 @@ module bindings{
 			}
 		};
 
+		/**
+			@constructs bindings.Modal
+			@arg {Object} object
+			@arg {Object} options
+			@arg {string} [options.prefix=bind] - the prefix to use when binding
+			@arg {Node} node
+		*/
 		constructor(public object: Object, options: any = {}, public node: Node = document.body) {
 			this.scope = new bindings.Scope('', object, this);
 			for (var i in options) {
@@ -22,6 +44,9 @@ module bindings{
 			}
 		}
 
+		/**
+			@arg {Node} node - the node to bind to
+		*/
 		public applyBindings(node: Node = undefined) {
 			//remove old event
 			this.node.removeEventListener('DOMNodeInserted', this.ElementChange.bind(this));
@@ -35,6 +60,13 @@ module bindings{
 			this.node.addEventListener('DOMNodeRemoved', this.ElementChange.bind(this));
 		}
 
+		/**
+			loop through this.nodes children and create the bindings
+			@private
+			@arg {Node} [node=this.node]
+			@arg {bindings.Scope} [scope=this.scope]
+			@returns {bindings.Binding[]}
+		*/
 		private buildBindings(node: Node = this.node, scope: bindings.Scope = node.__scope__ || this.scope) { //loop through this.nodes children and create the bindings
 			var bindingsCreated: bindings.Binding[] = [];
 
@@ -70,6 +102,7 @@ module bindings{
 			return bindingsCreated;
 		}
 
+		/** @private */
 		private createBindings(node: Node): bindings.Binding[]{
 			var bindingsCreated: bindings.Binding[] = [];
 			switch(node.nodeType){
@@ -83,6 +116,7 @@ module bindings{
 			return bindingsCreated;
 		}
 
+		/** @private */
 		private createAttrBindings(node: HTMLElement): bindings.Binding[] {
 			var bindingsCreated = [];
 			var attrs: NodeList = node.attributes;
@@ -139,6 +173,7 @@ module bindings{
 			return bindingsCreated;
 		}
 
+		/** @private */
 		private createInlineBindings(node: Node): bindings.Binding[] {
 			var bindingsCreated = [];
 			var tokens: any[] = this.parseInlineBindings(node.nodeValue, this.options.inlineDelimiters);
@@ -166,6 +201,7 @@ module bindings{
 			return bindingsCreated;
 		}
 
+		/** @private */
 		private parseInlineBindings(template: string, delimiters: string[]): any[]{
 			var index: number = 0, 
 				lastIndex: number = 0, 
@@ -217,6 +253,7 @@ module bindings{
 			return tokens;
 		}
 
+		/** @private */
 		private ElementChange(event:Event){
 			event.stopPropagation();
 

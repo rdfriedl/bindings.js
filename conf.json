@@ -1,0 +1,32 @@
+{
+	"opts": {
+	    "recurse": true,
+	    "tutorials": "examples",
+	    "readme": "README.md",
+        "private": false,
+        "template": "node_modules/ink-docstrap/template"
+	},
+	"tags": {
+		"allowUnknownTags": true
+	},
+	"plugins": ["plugins/markdown"],
+	"templates": {
+		"cleverLinks": true,
+		"monospaceLinks": false,
+		"outputSourceFiles": true,
+		"outputSourcePath": true,
+		"systemName": "Bindings.js",
+		"footer": "",
+		"copyright": "",
+		"navType": "vertical",
+		"theme": "superhero",
+		"linenums": true,
+		"collapseSymbols": false,
+		"inverseNav": false,
+		"syntaxTheme": "dark"
+	},
+	"markdown": {
+		"parser": "gfm",
+		"hardwrap": true
+	}
+}
