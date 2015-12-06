@@ -20,6 +20,10 @@ module bindings{
 			this.parent = parent;
 		}
 
+		public dispose(){
+			
+		}
+
 		/**
 			@public
 			@arg {*} value

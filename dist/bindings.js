@@ -480,8 +480,13 @@ var bindings;
             this.setKeys(this.object);
 
             //watch for changes
-            Object.observe(this.object, this.objectChange.bind(this));
+            this.observer = this.objectChange.bind(this);
+            Object.observe(this.object, this.observer);
         }
+        Scope.prototype.dispose = function () {
+            Object.unobserve(this.object, this.observer);
+        };
+
         Scope.prototype.getKey = function (value) {
             for (var i in this.values) {
                 if (this.values[i].value == value) {
@@ -523,6 +528,7 @@ var bindings;
 
         Scope.prototype.removeKey = function (key, dontFire) {
             if (typeof dontFire === "undefined") { dontFire = false; }
+            this.values[key].dispose();
             delete this.values[key];
             if (!dontFire)
                 this.emit('change', this);
@@ -619,6 +625,9 @@ var bindings;
             this.value = value;
             this.parent = parent;
         }
+        Value.prototype.dispose = function () {
+        };
+
         /**
         @public
         @arg {*} value

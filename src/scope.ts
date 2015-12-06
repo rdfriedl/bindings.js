@@ -3,6 +3,7 @@
 module bindings {
 	export class Scope extends bindings.EventEmiter {
 		public values: any;
+		private observer;
 		/**
 			@constructs bindings.Scope
 			@arg {string} key
@@ -18,7 +19,12 @@ module bindings {
 			this.setKeys(this.object);
 
 			//watch for changes
-			Object.observe(this.object, this.objectChange.bind(this));
+			this.observer = this.objectChange.bind(this);
+			Object.observe(this.object, this.observer);
+		}
+
+		public dispose(){
+			Object.unobserve(this.object, this.observer);
 		}
 
 		public getKey(value:any){
@@ -57,6 +63,7 @@ module bindings {
 		}
 
 		public removeKey(key:string,dontFire:boolean = false){
+			this.values[key].dispose();
 			delete this.values[key];
 			if(!dontFire) this.emit('change',this);
 		}
