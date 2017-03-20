@@ -1,6 +1,6 @@
 /*!
- * bindings.js vv0.2.0
- * build-date: Mon Mar 20 2017 13:26:24 GMT-0500 (Central Daylight Time)
+ * bindings.js vv0.2.1
+ * build-date: Mon Mar 20 2017 13:33:09 GMT-0500 (Central Daylight Time)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -2100,7 +2100,7 @@ var ClickBinding = (function (_super) {
     }
     return ClickBinding;
 }(Binding_1.EventBinding));
-ClickBinding.id = 'event';
+ClickBinding.id = 'click';
 exports.default = ClickBinding;
 
 
