@@ -1,33 +1,21 @@
-/// <reference path="../bindings.ts" />
+import {OneWayBinding} from '../Binding';
 
-module bindingTypes{
-	export class EnabledBinding extends bindings.OneWayBinding{
-		public static id: string = 'enabled';
+export default class EnabledBinding extends OneWayBinding{
+	public static id: string = 'enabled';
 
-		/**
-			@constructs bindingTypes.EnabledBinding
-			@arg {HTMLElement} node
-			@arg {string} expression
-			@extends bindings.OneWayBinding
-		*/
-		constructor(node: HTMLElement, expression: string){
-			super(node, expression);
-			this.run();
+	constructor(node: HTMLElement, expression: string){
+		super(node, expression);
+		this.run();
+	}
+
+	public run(){
+		super.run();
+
+		if(this.expression.value){
+			this.node.removeAttribute('disabled')
 		}
-
-		/**
-			@public
-			@override
-		*/
-		public run(){
-			super.run();
-			
-			if(this.expression.value){
-				this.node.removeAttribute('disabled')
-			}
-			else{
-				this.node.setAttribute('disabled','disabled')
-			}
+		else{
+			this.node.setAttribute('disabled','disabled')
 		}
 	}
 }

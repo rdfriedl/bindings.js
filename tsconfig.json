@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"target": "es5",
+		"module": "commonjs",
+		"preserveConstEnums": true,
+		"sourceMap": true
+	},
+	"files": [
+		"src/index.ts",
+		"src/types.ts"
+	]
+}

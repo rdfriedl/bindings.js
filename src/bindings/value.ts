@@ -1,36 +1,28 @@
-/// <reference path="../bindings.ts" />
+import {TwoWayBinding} from '../Binding';
 
-module bindingTypes{
-	export class ValueBinding extends bindings.TwoWayBinding{
-		public static id: string = 'value';
+export default class ValueBinding extends TwoWayBinding{
+	public static id: string = 'value';
 
-		/**
-			@constructs bindingTypes.ValueBinding
-			@arg {HTMLElement} node
-			@arg {string} expression
-			@extends bindings.TwoWayBinding
-		*/
-		constructor(public node: HTMLInputElement, expression: string){
-			super(<HTMLElement> node, expression);
+	constructor(public node: HTMLInputElement, expression: string){
+		super(<HTMLElement> node, expression);
 
-			this.domEvents = ['change'];
-			this.updateEvents();
-		}
+		this.domEvents = ['change'];
+		this.updateEvents();
+	}
 
-		/** @override */
-		public run(){
-			super.run();
-			this.node.value = this.expression.value;
-		}
+	public run(){
+		super.run();
+		this.node.value = this.expression.value;
+	}
 
-		/** @override */
-		public change(event:Event){
-			super.change(event);
+	public change(event:Event){
+		super.change(event);
 
-			var value = this.expression.runOnScope().value;
-			if(value instanceof bindings.Value){
-				value.updateValue(this.node.value);
-			}
+		var value = this.expression.runOnScope().value;
+		if(value instanceof Value){
+			value.updateValue(this.node.value);
 		}
 	}
 }
+
+import Value from '../Value';

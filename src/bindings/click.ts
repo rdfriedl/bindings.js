@@ -1,20 +1,12 @@
-/// <reference path="../bindings.ts" />
+import {EventBinding} from '../Binding';
 
-module bindingTypes{
-	export class ClickBinding extends bindings.EventBinding {
-		public static id: string = 'click';
-		
-		/**
-			@constructs bindingTypes.ClickBinding
-			@extends bindings.EventBinding
-			@arg {HTMLElement} node
-			@arg {string} expression
-		*/
-		constructor(node: HTMLElement, expression: string){
-			super(node, expression);
+export default class ClickBinding extends EventBinding{
+	public static id: string = 'event';
 
-			this.domEvents = ['click'];
-			this.updateEvents();
-		}
+	constructor(node: HTMLElement, expression: string){
+		super(node, expression);
+
+		this.domEvents = ['click'];
+		this.updateEvents();
 	}
 }

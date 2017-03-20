@@ -1,33 +1,23 @@
-/// <reference path="../bindings.ts" />
+import {OneWayBinding} from '../Binding';
 
-module bindingTypes{
-	export class TextBinding extends bindings.OneWayBinding{
-		public static id: string = 'text';
-		private oldText: string;
+export default class TextBinding extends OneWayBinding{
+	public static id: string = 'text';
+	private oldText: string;
 
-		/**
-			@constructs bindingTypes.TextBinding
-			@arg {HTMLElement} node
-			@arg {string} expression
-			@extends bindings.OneWayBinding
-		*/
-		constructor(node:HTMLBRElement, expression: string){
-			super(node, expression);
-			
-			this.oldText = this.node.textContent;
-			this.run();
-		}
+	constructor(node:HTMLBRElement, expression: string){
+		super(node, expression);
 
-		/** @override */
-		public run(){
-			super.run();
-			this.node.innerText = this.expression.value;
-		}
+		this.oldText = this.node.textContent;
+		this.run();
+	}
 
-		/** @override */
-		public unbind(){
-			super.unbind();
-			this.node.textContent = this.oldText;
-		}
+	public run(){
+		super.run();
+		this.node.innerText = this.expression.value;
+	}
+
+	public unbind(){
+		super.unbind();
+		this.node.textContent = this.oldText;
 	}
 }

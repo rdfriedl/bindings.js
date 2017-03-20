@@ -1,25 +1,17 @@
-/// <reference path="../bindings.ts" />
+import {OneWayBinding} from '../Binding';
+import {setAttr} from '../utils';
 
-module bindingTypes{
-	export class SrcBinding extends bindings.OneWayBinding{
-		public static id: string = 'src';
+export default class SrcBinding extends OneWayBinding{
+	public static id: string = 'src';
 
-		/**
-			@constructs bindingTypes.SrcBinding
-			@arg {HTMLElement} node
-			@arg {string} expression
-			@extends bindings.OneWayBinding
-		*/
-		constructor(node: HTMLElement, expression: string){
-			super(node, expression);
-			this.run();
-		}
+	constructor(node: HTMLElement, expression: string){
+		super(node, expression);
+		this.run();
+	}
 
-		/** @override */
-		public run(){
-			super.run();
-			
-			bindings.utils.setAttr(this.node, 'src', this.expression.value);
-		}
+	public run(){
+		super.run();
+
+		setAttr(this.node, 'src', this.expression.value);
 	}
 }
