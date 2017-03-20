@@ -70,9 +70,10 @@ module.exports = [
 	}),
 
 	// bundle min build
-	Object.assign({},prod,bundle,{
+	Object.assign({},prod,{
 		output: Object.assign({},base.output,{
 			filename: 'bindings.bundle.min.js'
-		})
+		}),
+		externals: {}
 	})
 ];

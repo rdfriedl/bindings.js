@@ -1,6 +1,6 @@
 /*!
  * bindings.js vv0.2.0
- * build-date: Mon Mar 20 2017 13:13:12 GMT-0500 (Central Daylight Time)
+ * build-date: Mon Mar 20 2017 13:26:24 GMT-0500 (Central Daylight Time)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
